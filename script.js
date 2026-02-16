@@ -2,15 +2,15 @@ const calc1 = document.getElementById('calc1')
 const calc2 = document.getElementById('calc2')
 const calc3 = document.getElementById('calc3')
 const calc4 = document.getElementById('calc4')
-
 const option1 = document.getElementById('option1')
 const option2 = document.getElementById('option2')
 const option3 = document.getElementById('option3')
-
-
 const proveedor = document.getElementById('proveedor')
 const moneda = document.getElementById('moneda')
 
+const version = '1.0.0'
+
+console.log('version: ', version)
 
 calc1.addEventListener('input', () => {
     if(calc1.value == ''){
@@ -76,7 +76,7 @@ function calculo3() {
         calc4.value = ''
     }else{
         const recibidos = (calc3.value * proveedor.value)
-        calc4.value = recibidos.toFixed(1)
+        calc4.value = recibidos.toFixed(2)
     }
 }0.1
 
@@ -85,7 +85,7 @@ function calculo4() {
         calc3.value = ''
     }else{
         const enviados = (calc4.value / proveedor.value)
-        calc3.value = enviados.toFixed(1)
+        calc3.value = enviados.toFixed()
     }
 }
 
