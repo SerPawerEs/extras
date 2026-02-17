@@ -6,7 +6,8 @@ const calc3 = document.getElementById('calc3')
 const calc4 = document.getElementById('calc4')
 const option1 = document.getElementById('option1')
 const option2 = document.getElementById('option2')
-const option3 = document.getElementById('option3')
+
+
 const proveedor = document.getElementById('proveedor')
 const moneda = document.getElementById('moneda')
 
@@ -48,31 +49,31 @@ function cambioMoneda(){
     if(moneda.value == 'COP'){
         option1.value = '75'
         option2.value = '23.5'
-        option3.value = '0'
+
     }else if (moneda.value == 'USD'){
         option1.value = '0.0125'
         option2.value = '0.006'
-        option3.value = '0'
+
     }else if (moneda.value == 'CLP'){
         option1.value = '13.75'
         option2.value = '5.3'
-        option3.value = '0'
+
     }else if (moneda.value == 'BRL'){
         option1.value = '0.075'
         option2.value = '0.033'
-        option3.value = '0'
+
     }else if (moneda.value == 'MXN'){
         option1.value = '0.325'
         option2.value = '0.115'
-        option3.value = '0'
+
     }else if (moneda.value == 'PEN'){
         option1.value = '0.045'
         option2.value = '0.023'
-        option3.value = '0'
+
     }else{
         option1.value = '0'
         option2.value = '0'
-        option3.value = '0'
+
     }
 }
 
