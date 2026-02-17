@@ -1,5 +1,7 @@
-const calc1 = document.getElementById('calc1')
-const calc2 = document.getElementById('calc2')
+var calc1 = document.getElementById('calc1')
+var calc2 = document.getElementById('calc2')
+var regex = /^[0-9]+$/
+
 const calc3 = document.getElementById('calc3')
 const calc4 = document.getElementById('calc4')
 const option1 = document.getElementById('option1')
@@ -15,20 +17,23 @@ console.log('version: ', version)
 calc1.addEventListener('input', () => {
     if(calc1.value == ''){
         calc2.value = ''
+    }else if (calc1.value.match(regex)){
+        calc2.value = Math.floor(parseInt(calc1.value) * 0.7)
     }else{
-        const recibidos = calc1.value * 0.7
-        calc2.value = recibidos.toFixed()
+        calc2.value = 'Error'
     }
 })
 
 calc2.addEventListener('input', () => {
     if(calc2.value == ''){
         calc1.value = ''
+    }else if (calc2.value.match(regex)){
+        calc1.value = Math.ceil(parseInt(calc2.value) / 0.7)
     }else{
-        const enviados = calc2.value / 0.7
-        calc1.value = enviados.toFixed()
+        calc1.value = 'Error'
     }
 })
+
 
 
 document.addEventListener('DOMContentLoaded', () => {
