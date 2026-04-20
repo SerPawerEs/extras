@@ -1,1 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="calculator.png" type="image/png">
+</head>
+<body>
+    <div class="note-container">
+        <div class="content-note">
+            <div style="text-align: center; font-size: 20px; font-family: 'Courier New', Courier, monospace; color: white; padding: 10px;">Calcular Robux</div>
+            <div>Robux Recibidos</div>
+            <input type="number" id="calc2" style="padding: 5px; border-radius: 10px;" placeholder="Cuantos RBX quieres?">
+            <div>Precio de Gamepass</div>
+            <input type="number" id="calc1" style="padding: 5px; border-radius: 10px;" placeholder="Envias (Gamepass necesario)">
+        </div>
+        <div class="content-note">
+            <div style="text-align: center; font-size: 20px; font-family: 'Courier New', Courier, monospace; color: white; padding: 10px;">Calcular Precios</div>
+            <div>Cantidad de Robux</div>
+            <input type="number" id="calc3" style="padding: 5px; border-radius: 10px;" placeholder="Robux">
+            <div>Precio</div>
+            <div style="display: flex; width: 100%; align-items: center; justify-content: center;">
+                <input type="number" id="calc4" style="padding: 5px; border-radius: 10px; width: 70%;" placeholder="Valor">
+                <select id="moneda" style="padding: 5px; border-radius: 10px; width: 30%;">
+                    <option value="COP">COP</option>
+                    <option value="USD">USD</option>
+                    <option value="CLP">CLP</option>
+                    <option value="BRL">BRL</option>
+                    <option value="MXN">MXN</option>
+                    <option value="PEN">PEN</option>
+                </select>
+            </div>
+            <div>Proveedor</div>
+            <select id="proveedor" style="padding: 5px; border-radius: 10px;">
+                <option id="option1">Roblox</option>
+                <option id="option2">Sh4rkie Studio</option>
+            </select>
+        </div>
+        <a href="https://discord.gg/Bhnm2mk72u" class="content-note" style="text-align: center;">🔗 Click para comprar en SH4RKIE!</a>
+    </div>
 
+    <script src="script.js"></script>
+</body>
+</html>
