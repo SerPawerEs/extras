@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendas</title>
+    <link rel="stylesheet" href="static/styles.css">
+    <style>
+        body{
+            display: grid;
+            align-items: unset;
+            justify-content: unset;
+            grid-template-rows: 1fr;
+        }
+        .date-menu{
+            padding: 20px 40px;
+            margin: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-radius: 10px;
+            border-style: solid;
+            background-color: rgba(255, 255, 255, 0.75);
+        }
+        .date-menu input{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 1.5rem;
+        }
+        .date-menu select{
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+        .date-menu button{
+            display: grid;
+            border-radius: 10px;
+            background-color: rgb(95, 117, 160);
+            font-size: 1.5rem;
+        }
+        .date-menu div{
+            font-size: 0.7rem;
+        }
+        .date-menu div::before{
+            content: '*';
+        }
+    </style>
+</head>
+<body>
+    <div class="date-menu">
+        <h2>Dirigete a cualquier agenda con su fecha</h2>
+        <input type="date" id="fecha">
+        <div>Fecha de la agenda</div>
+        <select id="grado">
+            <option value="" disabled selected hidden>Grado</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+        </select>
+        <div>Grado para acceder</div>
+        <select id="salon">
+            <option value="" disabled selected hidden>Curso</option>
+            <option value="a">A</option>
+            <option value="b">B</option>
+            <option value="c">C</option>
+            <option value="d">D</option>
+            <option value="e">E</option>
+        </select>
+        <div>Letra del grado para acceder</div>
+        <button style="display: none;" id="continue" onclick="redirect()">Continuar</button>
+        <div>⚠️ Si una agenda no está disponible aparecera "No se ha podido encontrar la página"</div>
+        <div id="error">Completa los campos para acceder a la agenda</div>
+    </div>
+    <script src="agenda.js"></script>
+</body>
+</html>
