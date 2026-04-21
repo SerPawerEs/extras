@@ -1,0 +1,51 @@
+* {
+    font-family: cursive;
+    padding: 0;
+    margin: 0;
+}
+
+body{
+    width: 100%;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 1fr;
+    overflow-x: hidden;
+    justify-content: center;
+}
+.date-menu{
+    max-width: 300px;
+    padding: 20px 40px;
+    margin: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: 10px;
+    border-style: solid;
+    background-color: rgba(255, 255, 255, 0.75);
+}
+.date-menu input{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 1.5rem;
+}
+.date-menu select{
+    width: 100%;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 1.5rem;
+}
+.date-menu button{
+    display: grid;
+    border-radius: 10px;
+    background-color: rgb(95, 117, 160);
+    font-size: 1.5rem;
+}
+.date-menu span{
+    font-size: 0.7rem;
+}
+.date-menu span::before{
+    content: '*';
+}
