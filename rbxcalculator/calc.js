@@ -48,32 +48,31 @@ moneda.addEventListener('change', () => {
 function cambioMoneda(){
     if(moneda.value == 'COP'){
         option1.value = '75'
-        option2.value = '23.5'
+        option2.value = '27.15'
 
     }else if (moneda.value == 'USD'){
         option1.value = '0.0125'
-        option2.value = '0.006'
+        option2.value = '0.0072'
 
     }else if (moneda.value == 'CLP'){
         option1.value = '13.75'
-        option2.value = '5.3'
+        option2.value = '6.38'
 
     }else if (moneda.value == 'BRL'){
         option1.value = '0.075'
-        option2.value = '0.033'
+        option2.value = '0.0442'
 
     }else if (moneda.value == 'MXN'){
         option1.value = '0.325'
-        option2.value = '0.115'
+        option2.value = '0.1245'
 
     }else if (moneda.value == 'PEN'){
         option1.value = '0.045'
-        option2.value = '0.023'
+        option2.value = '0.0247'
 
     }else{
         option1.value = '0'
         option2.value = '0'
-
     }
 }
 
