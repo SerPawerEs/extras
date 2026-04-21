@@ -2,7 +2,6 @@ const inputs = document.querySelectorAll('input')
 const selectors = document.querySelectorAll('select')
 const btn = document.getElementById('continue')
 const errmsg = document.getElementById('error')
-
 inputs.forEach(e => {
     e.addEventListener('change', () => {
         actualizarDatos()
@@ -52,9 +51,10 @@ function validate() {
     if(dia_t == 'sabado' || dia_t == 'domingo'){
         errmsg.innerHTML = 'No hay agendas disponibles los sabados y domingos'
     }else{
-        errmsg.innerHTML = 'Ve a la agenda con el botón de continuar'
+        errmsg.innerHTML = 'Completa los campos y pulsa continuar'
     }
 }
+setTimeout(validate, 1000)
 function redirect() {
     window.location.href = url
 }
