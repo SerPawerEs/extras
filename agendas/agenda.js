@@ -2,6 +2,14 @@ const inputs = document.querySelectorAll('input')
 const selectors = document.querySelectorAll('select')
 const btn = document.getElementById('continue')
 const errmsg = document.getElementById('error')
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        actualizarDatos()
+        root()
+    }, 500);
+})
+
 inputs.forEach(e => {
     e.addEventListener('change', () => {
         actualizarDatos()
@@ -57,4 +65,8 @@ function validate() {
 setTimeout(validate, 1000)
 function redirect() {
     window.location.href = url
+}
+
+function root(){
+    console.log('datos: ', dia_t, dia_n, mes_t, grado, salon, dia_t)
 }
