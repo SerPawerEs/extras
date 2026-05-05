@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirección</title>
+
+    <!-- ======================== FIREBASE SDK ======================== -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <h1>Cargando...</h1>
+    <script>
+        // ============================================================
+        //  🔧 CONFIGURACIÓN DE FIREBASE
+        //  Reemplaza estos valores con los de tu proyecto de Firebase
+        //  (Firebase Console > Project Settings > General > Your apps)
+        // ============================================================
+        const firebaseConfig = {
+          apiKey: "AIzaSyC9L0YQb9wqaDjETUE0RKzdOA8DAr94jog",
+          authDomain: "modificableurl.firebaseapp.com",
+          databaseURL: "https://modificableurl-default-rtdb.firebaseio.com",
+          projectId: "modificableurl",
+          storageBucket: "modificableurl.firebasestorage.app",
+          messagingSenderId: "666830731244",
+          appId: "1:666830731244:web:85ba4c74a4a863bb51f2c9",
+          measurementId: "G-QJJEV9Y6PS"
+        };
+
+        // ============================================================
+        //  🔧 NODO EN FIREBASE DONDE SE GUARDA LA URL
+        //  Por defecto usa "redirect/url" como ruta en Realtime Database
+        // ============================================================
+        const DATABASE_PATH = "redirect/url";
+
+        // ============================================================
+        //  INICIALIZACIÓN
+        // ============================================================
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Escuchar cambios en la URL en tiempo real        
+        db.ref(DATABASE_PATH).on('value', (snapshot) => {
+            const url = snapshot.val();
+            redirect()
+        }, (error) => {
+            console.error(error);
+        });
+
+        // Función de redirección
+        function redirect() {
+            db.ref(DATABASE_PATH).once('value').then((snapshot) => {
+                const url = snapshot.val();
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        }
+
+        // Generar partículas decorativas
+        (function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 25; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                const size = Math.random() * 6 + 2;
+                p.style.width  = size + 'px';
+                p.style.height = size + 'px';
+                p.style.left   = Math.random() * 100 + '%';
+                p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                p.style.animationDelay    = (Math.random() * 10) + 's';
+                container.appendChild(p);
+            }
+        })();
+        setTimeout(window.onload(redirect()), 1000)
+    </script>
+</body>
+</html>
