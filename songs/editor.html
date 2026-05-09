@@ -43,18 +43,16 @@
     .hl-btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: .85rem; font-weight: 600; transition: transform .15s, box-shadow .15s; }
     .hl-btn:hover { transform: translateY(-1px); }
     
-    /* Estilos de botones de colores */
     .hl-btn[data-class="hl-pink"] { border-color: var(--pink); } .hl-btn[data-class="hl-pink"]:hover { box-shadow: 0 0 12px var(--pink-glow); }
     .hl-btn[data-class="hl-yellow"] { border-color: var(--yellow); } .hl-btn[data-class="hl-yellow"]:hover { box-shadow: 0 0 12px var(--yellow-glow); }
     .hl-btn[data-class="hl-mixed"] { background: linear-gradient(135deg, var(--pink), var(--yellow)); color: #000; border: none; }
-    .hl-btn[data-class="hl-pastel"] { border-color: var(--text); opacity: .85; }    .hl-btn[data-class="hl-cyan"] { border-color: var(--cyan); } .hl-btn[data-class="hl-cyan"]:hover { box-shadow: 0 0 12px var(--cyan-glow); }
-    .hl-btn[data-class="hl-green"] { border-color: var(--green); } .hl-btn[data-class="hl-green"]:hover { box-shadow: 0 0 12px var(--green-glow); }
+    .hl-btn[data-class="hl-pastel"] { border-color: var(--text); opacity: .85; }
+    .hl-btn[data-class="hl-cyan"] { border-color: var(--cyan); } .hl-btn[data-class="hl-cyan"]:hover { box-shadow: 0 0 12px var(--cyan-glow); }    .hl-btn[data-class="hl-green"] { border-color: var(--green); } .hl-btn[data-class="hl-green"]:hover { box-shadow: 0 0 12px var(--green-glow); }
     .hl-btn[data-class="hl-red"] { border-color: var(--red); } .hl-btn[data-class="hl-red"]:hover { box-shadow: 0 0 12px var(--red-glow); }
     .hl-btn[data-class="hl-gray"] { background: linear-gradient(135deg, #888, #fff, #bbb); color: #000; border: none; }
 
-    /* Control de tamaño de fuente */
     .font-size-group { display: flex; align-items: center; gap: 6px; margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--border); }
-    .font-size-input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 4px; width: 65px; font-size: .8rem; outline: none; text-align: center; }
+    .font-size-input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 4px; width: 70px; font-size: .8rem; outline: none; text-align: center; }
     .font-size-input:focus { border-color: var(--pink); }
 
     /* ── EDITOR ── */
@@ -67,7 +65,6 @@
     #editor:empty::before { content: attr(placeholder); color: #555; pointer-events: none; }
     #editor:focus { border-color: var(--pink); box-shadow: inset 0 2px 6px rgba(0,0,0,.3), 0 0 12px var(--pink-glow); }
 
-    /* ── PREVIEW JSON ── */
     .output-area { display: flex; flex-direction: column; gap: 10px; margin-top: 5px; }
     #json-preview {
       background: #0d0d0d; border: 1px solid var(--border); color: #b0b0b0; padding: 14px;
@@ -75,7 +72,7 @@
       white-space: pre; line-height: 1.4;
     }
 
-    /* ── ESTILOS INTERNOS (Clases aplicadas al texto) ── */
+    /* ── ESTILOS INTERNOS ── */
     .hl-pink { color: var(--pink); font-weight: 700; text-shadow: 0 0 8px var(--pink-glow), 0 0 18px var(--pink-glow); }
     .hl-yellow { color: var(--yellow); font-weight: 700; text-shadow: 0 0 8px var(--yellow-glow), 0 0 18px var(--yellow-glow); }
     .hl-mixed { background: linear-gradient(135deg, var(--pink), var(--yellow)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 900; }
@@ -96,10 +93,10 @@
         <input type="text" id="meta-title" placeholder="Título de la canción">
         <input type="text" id="meta-audio" placeholder="Ruta del audio (ej: audios/cancion.mp3)">
       </div>
-      <div class="actions">        <button class="btn btn-secondary" id="upload-btn">📂 Cargar JSON</button>
+      <div class="actions">
+        <button class="btn btn-secondary" id="upload-btn">📂 Cargar JSON</button>
         <input type="file" id="file-input" accept=".json">
-        <button class="btn btn-primary" id="btn-download">⬇ Descargar</button>
-      </div>
+        <button class="btn btn-primary" id="btn-download">⬇ Descargar</button>      </div>
     </div>
 
     <div class="toolbar">
@@ -144,30 +141,23 @@
         if (!sel.rangeCount) return;
         const range = sel.getRangeAt(0);
         
-        // Identificamos el contenedor más profundo donde inicia la selección
-        let node = range.startContainer;        if (node.nodeType === 3) node = node.parentElement;
+        let node = range.startContainer;
+        if (node.nodeType === 3) node = node.parentElement;
 
-        // Buscamos si ya existe un span con esa clase envolviendo la selección
         const targetSpan = node.closest(`span.${className}`);
-
         if (targetSpan) {
-            // ✅ SI YA TIENE EL ESTILO: Se elimina
             targetSpan.classList.remove(className);
-            
-            // Limpieza: Si el span no tiene clases ni estilos inline, lo eliminamos (unwrap)
-            if (!targetSpan.className && targetSpan.style.length === 0 && targetSpan.attributes.length === 0) {
+            if (!targetSpan.className && targetSpan.style.length === 0) {
                  const parent = targetSpan.parentNode;
                  while (targetSpan.firstChild) parent.insertBefore(targetSpan.firstChild, targetSpan);
                  parent.removeChild(targetSpan);
             }
         } else {
-            // ❌ SI NO TIENE EL ESTILO: Se aplica (Wrap)
             try {
                 const span = document.createElement('span');
                 span.className = className;
                 range.surroundContents(span);
             } catch (e) {
-                // Fallback para selecciones complejas (cruzar etiquetas)
                 const frag = range.extractContents();
                 const span = document.createElement('span');
                 span.className = className;
@@ -175,8 +165,6 @@
                 range.insertNode(span);
             }
         }
-        
-        // Limpiamos selección y actualizamos preview
         sel.removeAllRanges();
         updateOutput();
     }
@@ -187,17 +175,14 @@
         const sel = window.getSelection();
         if (!sel.rangeCount || sel.isCollapsed) return;
 
-        // Truco para envolver selección: usar execCommand y luego reemplazar la etiqueta
-        document.execCommand('fontSize', false, 7); // Crea <font size="7">
-        
-        // Reemplazamos por <span style="font-size: X">
+        document.execCommand('fontSize', false, 7); 
         const fontTags = editor.querySelectorAll('font[size="7"]');
         fontTags.forEach(font => {
             const span = document.createElement('span');
-            span.style.fontSize = size;            while (font.firstChild) span.appendChild(font.firstChild);
+            span.style.fontSize = size;
+            while (font.firstChild) span.appendChild(font.firstChild);
             font.parentNode.replaceChild(span, font);
         });
-        
         sel.removeAllRanges();
         updateOutput();
     }
@@ -209,8 +194,7 @@
         .replace(/<\/div>/g, '')
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/ /g, ' ');
-        
-      const lines = html.split('\n').filter(l => l.trim() !== '');
+              const lines = html.split('\n').filter(l => l.trim() !== '');
       const regex = /^\s*\[(\d+(?:\.\d+)?)(?:\/(\d+))?\]\s*/;
       const parsed = [];
 
@@ -243,7 +227,8 @@
           intro: { playButtonLabel: "Reproducir" },
           controls: { toggleLabel: "⋮", modalTitle: "Controles", seekLabel: "Buscar", volumeLabel: "Volumen", rewindSeconds: 10, forwardSeconds: 10 }
         },
-        lyrics: parseLyrics()      };
+        lyrics: parseLyrics()
+      };
     }
 
     function updateOutput() {
@@ -257,11 +242,12 @@
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `${(metaTitle.value || 'lyrics').toLowerCase().replace(/\s+/g, '-')}.json`;
-      document.body.appendChild(a); a.click(); a.remove();
+      document.body.appendChild(a); 
+      a.click();       a.remove();
       URL.revokeObjectURL(a.href);
     }
 
-    // ── Carga de archivo (solo por botón) ──
+    // ── Carga de archivo ──
     function handleFile(file) {
       if (!file || !file.name.toLowerCase().endsWith('.json')) return;
       const reader = new FileReader();
@@ -285,13 +271,14 @@
     uploadBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
 
-    // Pegado limpio (solo texto)
+    // Pegado limpio
     editor.addEventListener('paste', (e) => {
       e.preventDefault();
       const text = (e.clipboardData || window.clipboardData).getData('text/plain');
       document.execCommand('insertText', false, text);
       updateOutput();
     });
+
     editor.addEventListener('input', updateOutput);
     metaTitle.addEventListener('input', updateOutput);
     metaAudio.addEventListener('input', updateOutput);
@@ -305,12 +292,14 @@
     applySizeBtn.addEventListener('click', () => applyFontSize(fontSizeInput.value));
     fontSizeInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            applyFontSize(fontSizeInput.value);
-            e.preventDefault();
+            applyFontSize(fontSizeInput.value);            e.preventDefault();
         }
     });
 
-    // Enter en editor (salto de línea)
+    // ✅ BOTÓN DE DESCARGA (RESTAURADO)
+    document.getElementById('btn-download').addEventListener('click', downloadJSON);
+
+    // Enter en editor
     editor.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
