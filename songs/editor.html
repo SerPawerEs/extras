@@ -9,6 +9,9 @@
       --bg: #0a0a0a; --surface: #141414; --text: #f5d0e0;
       --pink: #ff6eb4; --yellow: #ffe566;
       --pink-glow: rgba(255,110,180,.4); --yellow-glow: rgba(255,229,102,.4);
+      --cyan: #00f0ff; --cyan-glow: rgba(0,240,255,.4);
+      --green: #00ff9d; --green-glow: rgba(0,255,157,.4);
+      --red: #ff3333; --red-glow: rgba(255,51,51,.4);
       --border: #2a2a2a;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -27,31 +30,34 @@
     .meta-grid input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 6px; outline: none; font-family: inherit; width: 220px; }
     .meta-grid input:focus { border-color: var(--pink); }
 
-    .actions { display: flex; gap: 8px; }
+    .actions { display: flex; gap: 10px; }
     .btn { border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: .85rem; font-weight: 500; transition: all .15s; display: flex; align-items: center; gap: 5px; }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: #555; }
     .btn-primary { background: linear-gradient(135deg, var(--pink), #e85a9c); color: #000; font-weight: 700; }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px var(--pink-glow); }
     input[type="file"] { display: none; }
 
-    /* ── DROP ZONE ── */
-    .file-drop-zone { display: flex; align-items: center; gap: 8px; border: 2px dashed #333; border-radius: 8px; padding: 6px 10px; transition: all .2s; }
-    .file-drop-zone .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-    .file-drop-zone .btn-secondary:hover { border-color: #555; }
-    .drop-hint { font-size: .75rem; color: #666; user-select: none; }
-    .file-drop-zone.drag-over { border-color: var(--pink); background: rgba(255,110,180,0.06); }
-    .file-drop-zone.drag-over .btn-secondary { border-color: var(--pink); color: var(--pink); }
-    .file-drop-zone.drag-over .drop-hint { color: var(--pink); }
-
-    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+    /* ── TOOLBAR ── */
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 5px; }
     .hl-btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: .85rem; font-weight: 600; transition: transform .15s, box-shadow .15s; }
     .hl-btn:hover { transform: translateY(-1px); }
-    .hl-btn[data-class="hl-pink"] { border-color: var(--pink); }
-    .hl-btn[data-class="hl-pink"]:hover { box-shadow: 0 0 12px var(--pink-glow); }
-    .hl-btn[data-class="hl-yellow"] { border-color: var(--yellow); }
-    .hl-btn[data-class="hl-yellow"]:hover { box-shadow: 0 0 12px var(--yellow-glow); }
+    
+    /* Estilos de botones de colores */
+    .hl-btn[data-class="hl-pink"] { border-color: var(--pink); } .hl-btn[data-class="hl-pink"]:hover { box-shadow: 0 0 12px var(--pink-glow); }
+    .hl-btn[data-class="hl-yellow"] { border-color: var(--yellow); } .hl-btn[data-class="hl-yellow"]:hover { box-shadow: 0 0 12px var(--yellow-glow); }
     .hl-btn[data-class="hl-mixed"] { background: linear-gradient(135deg, var(--pink), var(--yellow)); color: #000; border: none; }
-    .hl-btn[data-class="hl-pastel"] { border-color: var(--text); opacity: .85; }
+    .hl-btn[data-class="hl-pastel"] { border-color: var(--text); opacity: .85; }    .hl-btn[data-class="hl-cyan"] { border-color: var(--cyan); } .hl-btn[data-class="hl-cyan"]:hover { box-shadow: 0 0 12px var(--cyan-glow); }
+    .hl-btn[data-class="hl-green"] { border-color: var(--green); } .hl-btn[data-class="hl-green"]:hover { box-shadow: 0 0 12px var(--green-glow); }
+    .hl-btn[data-class="hl-red"] { border-color: var(--red); } .hl-btn[data-class="hl-red"]:hover { box-shadow: 0 0 12px var(--red-glow); }
+    .hl-btn[data-class="hl-gray"] { background: linear-gradient(135deg, #888, #fff, #bbb); color: #000; border: none; }
 
+    /* Control de tamaño de fuente */
+    .font-size-group { display: flex; align-items: center; gap: 6px; margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--border); }
+    .font-size-input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 4px; width: 65px; font-size: .8rem; outline: none; text-align: center; }
+    .font-size-input:focus { border-color: var(--pink); }
+
+    /* ── EDITOR ── */
     #editor {
       background: var(--surface); border: 1px solid var(--border); color: var(--text);
       padding: 16px; border-radius: 10px; min-height: 200px; max-height: 400px; outline: none; overflow-y: auto;
@@ -61,6 +67,7 @@
     #editor:empty::before { content: attr(placeholder); color: #555; pointer-events: none; }
     #editor:focus { border-color: var(--pink); box-shadow: inset 0 2px 6px rgba(0,0,0,.3), 0 0 12px var(--pink-glow); }
 
+    /* ── PREVIEW JSON ── */
     .output-area { display: flex; flex-direction: column; gap: 10px; margin-top: 5px; }
     #json-preview {
       background: #0d0d0d; border: 1px solid var(--border); color: #b0b0b0; padding: 14px;
@@ -68,11 +75,15 @@
       white-space: pre; line-height: 1.4;
     }
 
-    /* Clases de resaltado */
+    /* ── ESTILOS INTERNOS (Clases aplicadas al texto) ── */
     .hl-pink { color: var(--pink); font-weight: 700; text-shadow: 0 0 8px var(--pink-glow), 0 0 18px var(--pink-glow); }
     .hl-yellow { color: var(--yellow); font-weight: 700; text-shadow: 0 0 8px var(--yellow-glow), 0 0 18px var(--yellow-glow); }
     .hl-mixed { background: linear-gradient(135deg, var(--pink), var(--yellow)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 900; }
     .hl-pastel { color: var(--text); font-weight: 500; font-style: italic; text-shadow: 0 0 10px rgba(245,208,224,.4); }
+    .hl-cyan { color: var(--cyan); font-weight: 700; text-shadow: 0 0 8px var(--cyan-glow), 0 0 18px var(--cyan-glow); }
+    .hl-green { color: var(--green); font-weight: 700; text-shadow: 0 0 8px var(--green-glow), 0 0 18px var(--green-glow); }
+    .hl-red { color: var(--red); font-weight: 700; text-shadow: 0 0 8px var(--red-glow), 0 0 18px var(--red-glow); }
+    .hl-gray { background: linear-gradient(135deg, #888, #fff, #bbb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 800; filter: drop-shadow(0 0 4px rgba(255,255,255,.3)); }
   </style>
 </head>
 <body>
@@ -85,12 +96,8 @@
         <input type="text" id="meta-title" placeholder="Título de la canción">
         <input type="text" id="meta-audio" placeholder="Ruta del audio (ej: audios/cancion.mp3)">
       </div>
-      <div class="actions">
-        <div class="file-drop-zone" id="drop-zone">
-          <button class="btn btn-secondary" id="upload-btn">📂 Cargar JSON</button>
-          <span class="drop-hint">o arrastra aquí</span>
-          <input type="file" id="file-input" accept=".json">
-        </div>
+      <div class="actions">        <button class="btn btn-secondary" id="upload-btn">📂 Cargar JSON</button>
+        <input type="file" id="file-input" accept=".json">
         <button class="btn btn-primary" id="btn-download">⬇ Descargar</button>
       </div>
     </div>
@@ -100,6 +107,15 @@
       <button class="hl-btn" data-class="hl-yellow">⚡ Amarillo</button>
       <button class="hl-btn" data-class="hl-mixed">🌈 Gradiente</button>
       <button class="hl-btn" data-class="hl-pastel">✨ Pastel</button>
+      <button class="hl-btn" data-class="hl-cyan">💧 Cian</button>
+      <button class="hl-btn" data-class="hl-green">🌿 Verde</button>
+      <button class="hl-btn" data-class="hl-red">🔥 Rojo</button>
+      <button class="hl-btn" data-class="hl-gray">⚪ Metal</button>
+      
+      <div class="font-size-group">
+        <input type="text" id="font-size-input" class="font-size-input" placeholder="1.2rem">
+        <button class="hl-btn" id="apply-font-size" title="Aplicar tamaño">Aa</button>
+      </div>
     </div>
 
     <div id="editor" contenteditable="true" placeholder="[0] misterio de mujer
@@ -116,30 +132,74 @@
     const editor = document.getElementById('editor');
     const preview = document.getElementById('json-preview');
     const fileInput = document.getElementById('file-input');
-    const dropZone = document.getElementById('drop-zone');
     const uploadBtn = document.getElementById('upload-btn');
     const metaTitle = document.getElementById('meta-title');
     const metaAudio = document.getElementById('meta-audio');
+    const fontSizeInput = document.getElementById('font-size-input');
+    const applySizeBtn = document.getElementById('apply-font-size');
 
-    // ── Aplicar efecto ──
-    function applyEffect(className) {
-      const sel = window.getSelection();
-      if (!sel.rangeCount || sel.isCollapsed) return;
-      if (sel.getRangeAt(0).commonAncestorContainer.nodeName === 'BR') return;
+    // ── SISTEMA DE TOGGLE (Aplicar/Eliminar estilos) ──
+    function toggleStyle(className) {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        const range = sel.getRangeAt(0);
+        
+        // Identificamos el contenedor más profundo donde inicia la selección
+        let node = range.startContainer;        if (node.nodeType === 3) node = node.parentElement;
 
-      try {
-        const span = document.createElement('span');
-        span.className = className;
-        sel.getRangeAt(0).surroundContents(span);
-      } catch (e) {
-        const frag = sel.getRangeAt(0).extractContents();
-        const span = document.createElement('span');
-        span.className = className;
-        span.appendChild(frag);
-        sel.getRangeAt(0).insertNode(span);
-      }
-      sel.removeAllRanges();
-      updateOutput();
+        // Buscamos si ya existe un span con esa clase envolviendo la selección
+        const targetSpan = node.closest(`span.${className}`);
+
+        if (targetSpan) {
+            // ✅ SI YA TIENE EL ESTILO: Se elimina
+            targetSpan.classList.remove(className);
+            
+            // Limpieza: Si el span no tiene clases ni estilos inline, lo eliminamos (unwrap)
+            if (!targetSpan.className && targetSpan.style.length === 0 && targetSpan.attributes.length === 0) {
+                 const parent = targetSpan.parentNode;
+                 while (targetSpan.firstChild) parent.insertBefore(targetSpan.firstChild, targetSpan);
+                 parent.removeChild(targetSpan);
+            }
+        } else {
+            // ❌ SI NO TIENE EL ESTILO: Se aplica (Wrap)
+            try {
+                const span = document.createElement('span');
+                span.className = className;
+                range.surroundContents(span);
+            } catch (e) {
+                // Fallback para selecciones complejas (cruzar etiquetas)
+                const frag = range.extractContents();
+                const span = document.createElement('span');
+                span.className = className;
+                span.appendChild(frag);
+                range.insertNode(span);
+            }
+        }
+        
+        // Limpiamos selección y actualizamos preview
+        sel.removeAllRanges();
+        updateOutput();
+    }
+
+    // ── APLICAR TAMAÑO DE FUENTE ──
+    function applyFontSize(size) {
+        if (!size) return;
+        const sel = window.getSelection();
+        if (!sel.rangeCount || sel.isCollapsed) return;
+
+        // Truco para envolver selección: usar execCommand y luego reemplazar la etiqueta
+        document.execCommand('fontSize', false, 7); // Crea <font size="7">
+        
+        // Reemplazamos por <span style="font-size: X">
+        const fontTags = editor.querySelectorAll('font[size="7"]');
+        fontTags.forEach(font => {
+            const span = document.createElement('span');
+            span.style.fontSize = size;            while (font.firstChild) span.appendChild(font.firstChild);
+            font.parentNode.replaceChild(span, font);
+        });
+        
+        sel.removeAllRanges();
+        updateOutput();
     }
 
     // ── Parser: HTML → JSON Lyrics ──
@@ -148,7 +208,7 @@
         .replace(/<div>/g, '\n')
         .replace(/<\/div>/g, '')
         .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/&nbsp;/g, ' ');
+        .replace(/ /g, ' ');
         
       const lines = html.split('\n').filter(l => l.trim() !== '');
       const regex = /^\s*\[(\d+(?:\.\d+)?)(?:\/(\d+))?\]\s*/;
@@ -183,8 +243,7 @@
           intro: { playButtonLabel: "Reproducir" },
           controls: { toggleLabel: "⋮", modalTitle: "Controles", seekLabel: "Buscar", volumeLabel: "Volumen", rewindSeconds: 10, forwardSeconds: 10 }
         },
-        lyrics: parseLyrics()
-      };
+        lyrics: parseLyrics()      };
     }
 
     function updateOutput() {
@@ -202,7 +261,7 @@
       URL.revokeObjectURL(a.href);
     }
 
-    // ── Carga de archivo ──
+    // ── Carga de archivo (solo por botón) ──
     function handleFile(file) {
       if (!file || !file.name.toLowerCase().endsWith('.json')) return;
       const reader = new FileReader();
@@ -222,39 +281,36 @@
       reader.readAsText(file);
     }
 
-    // ✅ EVENTOS
-    uploadBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+    // ── EVENTOS ──
+    uploadBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
-    
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
-    });
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
-    });
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
-    });
-    dropZone.addEventListener('drop', (e) => {
-      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
-    }, false);
 
-    // ✅ INTERCEPTOR DE PEGADO (Elimina estilos externos automáticamente)
+    // Pegado limpio (solo texto)
     editor.addEventListener('paste', (e) => {
       e.preventDefault();
       const text = (e.clipboardData || window.clipboardData).getData('text/plain');
       document.execCommand('insertText', false, text);
       updateOutput();
     });
-
     editor.addEventListener('input', updateOutput);
     metaTitle.addEventListener('input', updateOutput);
     metaAudio.addEventListener('input', updateOutput);
-    document.querySelectorAll('.hl-btn').forEach(btn => {
-      btn.addEventListener('click', () => applyEffect(btn.dataset.class));
-    });
-    document.getElementById('btn-download').addEventListener('click', downloadJSON);
 
+    // Botones de colores
+    document.querySelectorAll('.hl-btn[data-class]').forEach(btn => {
+      btn.addEventListener('click', () => toggleStyle(btn.dataset.class));
+    });
+
+    // Botón y Input de Tamaño
+    applySizeBtn.addEventListener('click', () => applyFontSize(fontSizeInput.value));
+    fontSizeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            applyFontSize(fontSizeInput.value);
+            e.preventDefault();
+        }
+    });
+
+    // Enter en editor (salto de línea)
     editor.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -263,6 +319,7 @@
       }
     });
 
+    // Init
     updateOutput();
   </script>
 </body>
