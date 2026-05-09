@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">Lyrics Visualizer</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="ambient"></div>
+  <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+  <div id="toast-container" class="toast-container"></div>
+  <audio id="audioPlayer" preload="auto" crossorigin="anonymous"></audio>
+
+  <div id="intro-screen" class="screen">
+    <h1 class="intro-title" id="intro-title">Cargando...</h1>
+    <button class="btn btn-play" id="intro-play-btn" aria-label="Reproducir">
+      <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+    </button>
+  </div>
+
+  <div id="lyrics-screen" class="screen">
+    <div class="lyrics-container">
+      <div class="current-line" id="currentLine"></div>
+    </div>
+  </div>
+
+  <button class="controls-toggle" id="controlsToggle" aria-label="Controles">⋮</button>
+  <div class="modal-overlay" id="controlsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-title">Controles</span>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="control-group">
+        <span class="control-label" id="seek-label">Buscar</span>
+        <div class="seek-wrap">
+          <input type="range" class="seek-bar" id="seekBar" min="0" max="100" value="0" step="0.1">
+          <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <span class="control-label" id="volume-label">Volumen</span>
+        <div class="volume-wrap">
+          <span class="volume-icon">🔊</span>
+          <input type="range" class="volume-bar" id="volumeBar" min="0" max="1" value="1" step="0.01">
+        </div>
+      </div>
+      <div class="playback-controls">
+        <button class="btn-sm" id="btnRewind" title="Atrás 10s">⏪</button>
+        <button class="btn-sm btn-play" id="btnPlayPause" title="Play/Pause">
+          <svg class="icon-play-sm" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="icon-pause-sm" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button class="btn-sm" id="btnForward" title="Adelante 10s">⏩</button>
+      </div>
+    </div>
+  </div>
+  <script src="js/player.js" type="module"></script>
+</body>
+</html>

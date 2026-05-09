@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor de Lyrics → JSON</title>
+  <style>
+    :root {
+      --bg: #0a0a0a; --surface: #141414; --text: #f5d0e0;
+      --pink: #ff6eb4; --yellow: #ffe566;
+      --pink-glow: rgba(255,110,180,.4); --yellow-glow: rgba(255,229,102,.4);
+      --border: #2a2a2a;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh; padding: 40px 20px; display: flex; justify-content: center;
+    }
+    .container { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 20px; }
+    
+    h1 { font-size: 1.7rem; text-align: center; background: linear-gradient(135deg, var(--text), var(--pink), var(--yellow)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hint { font-size: .82rem; color: #888; text-align: center; line-height: 1.4; margin-top: -5px; }
+    .hint code { background: #222; padding: 2px 5px; border-radius: 4px; font-family: monospace; color: var(--pink); }
+
+    .top-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .meta-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+    .meta-grid input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 6px; outline: none; font-family: inherit; width: 220px; }
+    .meta-grid input:focus { border-color: var(--pink); }
+
+    .actions { display: flex; gap: 8px; }
+    .btn { border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: .85rem; font-weight: 500; transition: all .15s; display: flex; align-items: center; gap: 5px; }
+    .btn-primary { background: linear-gradient(135deg, var(--pink), #e85a9c); color: #000; font-weight: 700; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px var(--pink-glow); }
+    input[type="file"] { display: none; }
+
+    /* ── DROP ZONE ── */
+    .file-drop-zone { display: flex; align-items: center; gap: 8px; border: 2px dashed #333; border-radius: 8px; padding: 6px 10px; transition: all .2s; }
+    .file-drop-zone .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .file-drop-zone .btn-secondary:hover { border-color: #555; }
+    .drop-hint { font-size: .75rem; color: #666; user-select: none; }
+    .file-drop-zone.drag-over { border-color: var(--pink); background: rgba(255,110,180,0.06); }
+    .file-drop-zone.drag-over .btn-secondary { border-color: var(--pink); color: var(--pink); }
+    .file-drop-zone.drag-over .drop-hint { color: var(--pink); }
+
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hl-btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: .85rem; font-weight: 600; transition: transform .15s, box-shadow .15s; }
+    .hl-btn:hover { transform: translateY(-1px); }
+    .hl-btn[data-class="hl-pink"] { border-color: var(--pink); }
+    .hl-btn[data-class="hl-pink"]:hover { box-shadow: 0 0 12px var(--pink-glow); }
+    .hl-btn[data-class="hl-yellow"] { border-color: var(--yellow); }
+    .hl-btn[data-class="hl-yellow"]:hover { box-shadow: 0 0 12px var(--yellow-glow); }
+    .hl-btn[data-class="hl-mixed"] { background: linear-gradient(135deg, var(--pink), var(--yellow)); color: #000; border: none; }
+    .hl-btn[data-class="hl-pastel"] { border-color: var(--text); opacity: .85; }
+
+    #editor {
+      background: var(--surface); border: 1px solid var(--border); color: var(--text);
+      padding: 16px; border-radius: 10px; min-height: 200px; max-height: 400px; outline: none; overflow-y: auto;
+      font-family: 'Consolas', 'Monaco', monospace; font-size: .92rem; line-height: 1.8;
+      white-space: pre-wrap; word-break: break-word; box-shadow: inset 0 2px 6px rgba(0,0,0,.3);
+    }
+    #editor:empty::before { content: attr(placeholder); color: #555; pointer-events: none; }
+    #editor:focus { border-color: var(--pink); box-shadow: inset 0 2px 6px rgba(0,0,0,.3), 0 0 12px var(--pink-glow); }
+
+    .output-area { display: flex; flex-direction: column; gap: 10px; margin-top: 5px; }
+    #json-preview {
+      background: #0d0d0d; border: 1px solid var(--border); color: #b0b0b0; padding: 14px;
+      border-radius: 8px; font-family: monospace; font-size: .82rem; overflow: auto; max-height: 300px;
+      white-space: pre; line-height: 1.4;
+    }
+
+    /* Clases de resaltado */
+    .hl-pink { color: var(--pink); font-weight: 700; text-shadow: 0 0 8px var(--pink-glow), 0 0 18px var(--pink-glow); }
+    .hl-yellow { color: var(--yellow); font-weight: 700; text-shadow: 0 0 8px var(--yellow-glow), 0 0 18px var(--yellow-glow); }
+    .hl-mixed { background: linear-gradient(135deg, var(--pink), var(--yellow)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 900; }
+    .hl-pastel { color: var(--text); font-weight: 500; font-style: italic; text-shadow: 0 0 10px rgba(245,208,224,.4); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎵 Editor de Lyrics → JSON</h1>
+    <p class="hint">Cada <code>Enter</code> crea una nueva línea. Usa <code>[seg]</code> o <code>[seg/duración_ms]</code> al inicio.</p>
+
+    <div class="top-bar">
+      <div class="meta-grid">
+        <input type="text" id="meta-title" placeholder="Título de la canción">
+        <input type="text" id="meta-audio" placeholder="Ruta del audio (ej: audios/cancion.mp3)">
+      </div>
+      <div class="actions">
+        <div class="file-drop-zone" id="drop-zone">
+          <button class="btn btn-secondary" id="upload-btn">📂 Cargar JSON</button>
+          <span class="drop-hint">o arrastra aquí</span>
+          <input type="file" id="file-input" accept=".json">
+        </div>
+        <button class="btn btn-primary" id="btn-download">⬇ Descargar</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="hl-btn" data-class="hl-pink">🌸 Rosa</button>
+      <button class="hl-btn" data-class="hl-yellow">⚡ Amarillo</button>
+      <button class="hl-btn" data-class="hl-mixed">🌈 Gradiente</button>
+      <button class="hl-btn" data-class="hl-pastel">✨ Pastel</button>
+    </div>
+
+    <div id="editor" contenteditable="true" placeholder="[0] misterio de mujer
+[2.5/1800] solo será cuestion de tiempo
+[5] debo interpretar tus gritos"></div>
+
+    <div class="output-area">
+      <div class="output-header"><h3>Vista Previa JSON</h3></div>
+      <pre id="json-preview">{}</pre>
+    </div>
+  </div>
+
+  <script>
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('json-preview');
+    const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
+    const uploadBtn = document.getElementById('upload-btn');
+    const metaTitle = document.getElementById('meta-title');
+    const metaAudio = document.getElementById('meta-audio');
+
+    // ── Aplicar efecto ──
+    function applyEffect(className) {
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed) return;
+      if (sel.getRangeAt(0).commonAncestorContainer.nodeName === 'BR') return;
+
+      try {
+        const span = document.createElement('span');
+        span.className = className;
+        sel.getRangeAt(0).surroundContents(span);
+      } catch (e) {
+        const frag = sel.getRangeAt(0).extractContents();
+        const span = document.createElement('span');
+        span.className = className;
+        span.appendChild(frag);
+        sel.getRangeAt(0).insertNode(span);
+      }
+      sel.removeAllRanges();
+      updateOutput();
+    }
+
+    // ── Parser: HTML → JSON Lyrics ──
+    function parseLyrics() {
+      const html = editor.innerHTML
+        .replace(/<div>/g, '\n')
+        .replace(/<\/div>/g, '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/&nbsp;/g, ' ');
+        
+      const lines = html.split('\n').filter(l => l.trim() !== '');
+      const regex = /^\s*\[(\d+(?:\.\d+)?)(?:\/(\d+))?\]\s*/;
+      const parsed = [];
+
+      lines.forEach(line => {
+        const match = line.match(regex);
+        let time = 0, fade = 500, htmlPart = line.trim();
+        
+        if (match) {
+          time = parseFloat(match[1]);
+          if (match[2] !== undefined) fade = parseInt(match[2], 10);
+          htmlPart = line.replace(regex, '');
+        }
+        
+        if (htmlPart.trim() || match) {
+          parsed.push({ time, fadeInDuration: fade, html: htmlPart.trim() || ' ' });
+        }
+      });
+      return parsed;
+    }
+
+    // ── Generar JSON completo ──
+    function generateFullJSON() {
+      return {
+        meta: {
+          title: metaTitle.value.trim() || "Sin Título",
+          audioSrc: metaAudio.value.trim() || "audios/track.mp3",
+          colors: { bg: "#0a0a0a", text: "#f5d0e0", pink: "#ff6eb4", yellow: "#ffe566" }
+        },
+        ui: {
+          intro: { playButtonLabel: "Reproducir" },
+          controls: { toggleLabel: "⋮", modalTitle: "Controles", seekLabel: "Buscar", volumeLabel: "Volumen", rewindSeconds: 10, forwardSeconds: 10 }
+        },
+        lyrics: parseLyrics()
+      };
+    }
+
+    function updateOutput() {
+      preview.textContent = JSON.stringify(generateFullJSON(), null, 2);
+    }
+
+    // ── Descargar ──
+    function downloadJSON() {
+      const data = generateFullJSON();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${(metaTitle.value || 'lyrics').toLowerCase().replace(/\s+/g, '-')}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // ── Carga de archivo ──
+    function handleFile(file) {
+      if (!file || !file.name.toLowerCase().endsWith('.json')) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const json = JSON.parse(ev.target.result);
+          if (json.meta) {
+            metaTitle.value = json.meta.title || '';
+            metaAudio.value = json.meta.audioSrc || '';
+          }
+          if (Array.isArray(json.lyrics)) {
+            editor.innerHTML = json.lyrics.map(l => `<div>[${l.time}/${l.fadeInDuration}] ${l.html || ''}</div>`).join('');
+          }
+          updateOutput();
+        } catch (err) { alert('Error al leer el archivo JSON. Verifica la estructura.'); }
+      };
+      reader.readAsText(file);
+    }
+
+    // ✅ EVENTOS
+    uploadBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+    fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+    });
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+    });
+    dropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    }, false);
+
+    // ✅ INTERCEPTOR DE PEGADO (Elimina estilos externos automáticamente)
+    editor.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, text);
+      updateOutput();
+    });
+
+    editor.addEventListener('input', updateOutput);
+    metaTitle.addEventListener('input', updateOutput);
+    metaAudio.addEventListener('input', updateOutput);
+    document.querySelectorAll('.hl-btn').forEach(btn => {
+      btn.addEventListener('click', () => applyEffect(btn.dataset.class));
+    });
+    document.getElementById('btn-download').addEventListener('click', downloadJSON);
+
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.execCommand('insertLineBreak');
+        updateOutput();
+      }
+    });
+
+    updateOutput();
+  </script>
+</body>
+</html>
