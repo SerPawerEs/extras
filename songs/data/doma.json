@@ -195,32 +195,32 @@
     },
     {
       "time": 154,
-      "fadeInDuration": 500,
+      "fadeInDuration": 2000,
       "html": "Y debo de enterrar el <span class=\"hl-yellow\">filo </span>de tu <span class=\"hl-pastel\">espada\r</span>"
     },
     {
       "time": 158.5,
-      "fadeInDuration": 500,
+      "fadeInDuration": 1000,
       "html": "En los secretos de tu <span class=\"hl-pastel\">almohada\r</span>"
     },
     {
       "time": 161.5,
-      "fadeInDuration": 500,
+      "fadeInDuration": 1000,
       "html": "Hasta que entiendas la <span class=\"hl-pastel\">lección\r</span>"
     },
     {
       "time": 167.5,
-      "fadeInDuration": 500,
+      "fadeInDuration": 2000,
       "html": "Debo llegar al fondo de este <span class=\"hl-yellow\">desparpajo\r</span>"
     },
     {
       "time": 173,
-      "fadeInDuration": 500,
+      "fadeInDuration": 1000,
       "html": "Que yo de esta <span class=\"hl-pastel\">no me rajo</span>"
     },
     {
       "time": 175.5,
-      "fadeInDuration": 500,
+      "fadeInDuration": 2000,
       "html": "Hasta <span class=\"hl-pink\">Domar </span>tu <span class=\"hl-mixed\">corazón</span>"
     }
   ]
