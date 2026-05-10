@@ -1,0 +1,192 @@
+{
+  "meta": {
+    "title": "Niño",
+    "audioSrc": "audios/niño.mp3",
+    "colors": {
+      "bg": "#0a0a0a",
+      "text": "#f5d0e0",
+      "pink": "#ff6eb4",
+      "yellow": "#ffe566"
+    }
+  },
+  "ui": {
+    "intro": {
+      "playButtonLabel": "Reproducir"
+    },
+    "controls": {
+      "toggleLabel": "⋮",
+      "modalTitle": "Controles",
+      "seekLabel": "Buscar",
+      "volumeLabel": "Volumen",
+      "rewindSeconds": 10,
+      "forwardSeconds": 10
+    }
+  },
+  "lyrics": [
+    {
+      "time": 0,
+      "fadeInDuration": 500,
+      "html": "¿Cómo estarán en la ensenada, el viejo ceibal"
+    },
+    {
+      "time": 6.5,
+      "fadeInDuration": 500,
+      "html": "Los jazmineros y orquídeas en flor?"
+    },
+    {
+      "time": 10.5,
+      "fadeInDuration": 500,
+      "html": "Donde cantó dulcemente el zorzal"
+    },
+    {
+      "time": 15.5,
+      "fadeInDuration": 500,
+      "html": "Quiero volver a contemplarme en tus ojos cambá"
+    },
+    {
+      "time": 21.5,
+      "fadeInDuration": 500,
+      "html": "Y que me beses como te besé"
+    },
+    {
+      "time": 25.5,
+      "fadeInDuration": 500,
+      "html": "Bajo la sombra del jacarandá"
+    },
+    {
+      "time": 32,
+      "fadeInDuration": 500,
+      "html": "Niño, apoyate en mis recuerdos, intentá dormir en paz"
+    },
+    {
+      "time": 38.5,
+      "fadeInDuration": 500,
+      "html": "Siento el peso en tu conciencia por el llanto de mamá"
+    },
+    {
+      "time": 44.5,
+      "fadeInDuration": 500,
+      "html": "Vi que el miedo al abandono no te deja respirar"
+    },
+    {
+      "time": 50,
+      "fadeInDuration": 500,
+      "html": "Siento el nudo de tu panza cuando te hablan de papá"
+    },
+    {
+      "time": 57.5,
+      "fadeInDuration": 500,
+      "html": "Niño, haz las paces con la vida, no es de piedra el pastizal"
+    },
+    {
+      "time": 64,
+      "fadeInDuration": 500,
+      "html": "La nostalgia de tu antes no te deja caminar"
+    },
+    {
+      "time": 70,
+      "fadeInDuration": 500,
+      "html": "¿Quién mató tu sonrisita de ilusión y de bondad?"
+    },
+    {
+      "time": 75,
+      "fadeInDuration": 500,
+      "html": "Sé que te querés dormir pa' no volver a despertar"
+    },
+    {
+      "time": 80.5,
+      "fadeInDuration": 500,
+      "html": "Amor, no llores, veo luz en tus males"
+    },
+    {
+      "time": 91.5,
+      "fadeInDuration": 500,
+      "html": "Siguiéndote el corazón, bailando en un canto de zorzales"
+    },
+    {
+      "time": 99.5,
+      "fadeInDuration": 500,
+      "html": "🎶"
+    },
+    {
+      "time": 104,
+      "fadeInDuration": 500,
+      "html": "Niño, soy un hombre con tristeza, sé del peso en tu verdad"
+    },
+    {
+      "time": 110.5,
+      "fadeInDuration": 500,
+      "html": "Escaparte por robar porque robás para cenar"
+    },
+    {
+      "time": 116,
+      "fadeInDuration": 500,
+      "html": "Vi tus dedos en el barro con olor a libertad"
+    },
+    {
+      "time": 121.5,
+      "fadeInDuration": 500,
+      "html": "Sé que te querés dormir pa' no volver a despertar"
+    },
+    {
+      "time": 128,
+      "fadeInDuration": 500,
+      "html": "Por el mundo vas de pillo con alma de caramelo"
+    },
+    {
+      "time": 133.5,
+      "fadeInDuration": 500,
+      "html": "Vi la vida en tus nudillos y su odio en tus hoyuelos (ah, ah, ah, ah)"
+    },
+    {
+      "time": 139,
+      "fadeInDuration": 500,
+      "html": "Le rezaste a unos amigos, pues no todos van al cielo"
+    },
+    {
+      "time": 144.5,
+      "fadeInDuration": 500,
+      "html": "Pero vos sos un grial"
+    },
+    {
+      "time": 148.5,
+      "fadeInDuration": 500,
+      "html": "Amor, no llores, veo luz en tus males"
+    },
+    {
+      "time": 159,
+      "fadeInDuration": 500,
+      "html": "Siguiéndote el corazón, bailando en un canto de zorzal"
+    },
+    {
+      "time": 165.5,
+      "fadeInDuration": 500,
+      "html": "Amor, no llores, veo luz en tus males"
+    },
+    {
+      "time": 176,
+      "fadeInDuration": 500,
+      "html": "Siguiéndote el corazón"
+    },
+    {
+      "time": 182.5,
+      "fadeInDuration": 500,
+      "html": "Hijo, me robaron tus ojitos los momentos que perdí"
+    },
+    {
+      "time": 189,
+      "fadeInDuration": 500,
+      "html": "Pedí tiempo a mi destino, y dijo, \"hoy te toca a ti\""
+    },
+    {
+      "time": 194.5,
+      "fadeInDuration": 500,
+      "html": "Sé que un día serás grande, sé que un día entenderás"
+    },
+    {
+      "time": 200.5,
+      "fadeInDuration": 500,
+      "html": "Los consejos de tu viejo, estoy descansando en paz"
+    }
+  ]
+}
