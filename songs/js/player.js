@@ -76,23 +76,51 @@ function syncPlayUI(playing) {
 }
 
 // ── PARSER ──
-function parseLyricHTML(html) {
-  const temp = document.createElement('div'); temp.innerHTML = html;
-  function wrap(node) {
-    if (node.nodeType === 3) {
+function parseLyricHTML(htmlString) {
+  const temp = document.createElement('div');
+  temp.innerHTML = htmlString;
+
+  function processNode(node) {
+    if (node.nodeType === 3) { // Texto plano
+      const text = node.textContent;
+      const tokens = text.split(/(\s+)/);
       const frag = document.createDocumentFragment();
-      for (const c of node.textContent) {
-        const s = document.createElement('span'); s.className = 'letter';
-        s.textContent = c === ' ' ? '\u00A0' : c; frag.appendChild(s);
-      }
+
+      tokens.forEach(token => {
+        if (!token) return;
+        if (/^\s+$/.test(token)) {
+          frag.appendChild(document.createTextNode(token));
+        } else {
+          const wordSpan = document.createElement('span');
+          wordSpan.className = 'word';
+          wordSpan.style.whiteSpace = 'nowrap';
+          for (const char of token) {
+            const letter = document.createElement('span');
+            letter.className = 'letter';
+            letter.textContent = char;
+            wordSpan.appendChild(letter);
+          }
+          frag.appendChild(wordSpan);
+        }
+      });
       node.replaceWith(frag);
-    } else if (node.nodeType === 1) {
-      const cls = [...node.classList];
-      [...node.childNodes].forEach(wrap);
-      node.querySelectorAll('.letter').forEach(l => cls.forEach(c => l.classList.add(c)));
+
+    } else if (node.nodeType === 1) { // Elemento con estilos
+      const classes = [...node.classList];
+      [...node.childNodes].forEach(processNode);
+      
+      // ✅ CORRECCIÓN: Aplicar clases directamente a las LETRAS
+      const letters = node.querySelectorAll('.letter');
+      letters.forEach(l => classes.forEach(c => l.classList.add(c)));
+      
+      // Desenrollar el span original
+      const parent = node.parentNode;
+      while (node.firstChild) parent.insertBefore(node.firstChild, node);
+      parent.removeChild(node);
     }
   }
-  [...temp.childNodes].forEach(wrap);
+
+  [...temp.childNodes].forEach(processNode);
   return temp.innerHTML;
 }
 

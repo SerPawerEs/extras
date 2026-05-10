@@ -24,83 +24,83 @@
   },
   "lyrics": [
     {
-      "time": 0,
-      "fadeInDuration": 500,
+      "time": 0.1,
+      "fadeInDuration": 5000,
       "html": "¿Cómo estarán en la ensenada, el viejo ceibal"
     },
     {
       "time": 6.5,
-      "fadeInDuration": 500,
+      "fadeInDuration": 2500,
       "html": "Los jazmineros y orquídeas en flor?"
     },
     {
       "time": 10.5,
-      "fadeInDuration": 500,
+      "fadeInDuration": 2000,
       "html": "Donde cantó dulcemente el zorzal"
     },
     {
       "time": 15.5,
-      "fadeInDuration": 500,
-      "html": "Quiero volver a contemplarme en tus ojos cambá"
+      "fadeInDuration": 5000,
+      "html": "Quiero volver a contemplarme en tus ojos <span class=\"hl-pastel\">cambá</span>"
     },
     {
       "time": 21.5,
-      "fadeInDuration": 500,
+      "fadeInDuration": 2000,
       "html": "Y que me beses como te besé"
     },
     {
       "time": 25.5,
-      "fadeInDuration": 500,
-      "html": "Bajo la sombra del jacarandá"
+      "fadeInDuration": 3000,
+      "html": "Bajo la sombra del<span class=\"hl-pink\"> jacarandá</span>"
     },
     {
       "time": 32,
-      "fadeInDuration": 500,
+      "fadeInDuration": 6000,
       "html": "Niño, apoyate en mis recuerdos, intentá dormir en paz"
     },
     {
       "time": 38.5,
-      "fadeInDuration": 500,
-      "html": "Siento el peso en tu conciencia por el llanto de mamá"
+      "fadeInDuration": 4000,
+      "html": "Siento el peso en tu conciencia por el llanto de <span class=\"hl-red\">mamá</span>"
     },
     {
       "time": 44.5,
-      "fadeInDuration": 500,
+      "fadeInDuration": 3500,
       "html": "Vi que el miedo al abandono no te deja respirar"
     },
     {
       "time": 50,
-      "fadeInDuration": 500,
-      "html": "Siento el nudo de tu panza cuando te hablan de papá"
+      "fadeInDuration": 4000,
+      "html": "Siento el nudo de tu panza cuando te hablan de <span class=\"hl-green\">papá</span>"
     },
     {
       "time": 57.5,
-      "fadeInDuration": 500,
+      "fadeInDuration": 5500,
       "html": "Niño, haz las paces con la vida, no es de piedra el pastizal"
     },
     {
       "time": 64,
-      "fadeInDuration": 500,
+      "fadeInDuration": 4000,
       "html": "La nostalgia de tu antes no te deja caminar"
     },
     {
-      "time": 70,
-      "fadeInDuration": 500,
-      "html": "¿Quién mató tu sonrisita de ilusión y de bondad?"
+      "time": 69,
+      "fadeInDuration": 5000,
+      "html": "¿Quién mató tu <span class=\"hl-pastel\">sonrisita </span>de ilusión y de bondad?"
     },
     {
       "time": 75,
-      "fadeInDuration": 500,
-      "html": "Sé que te querés dormir pa' no volver a despertar"
+      "fadeInDuration": 5000,
+      "html": "Sé que te querés dormir pa' <span class=\"hl-gray\">no volver a despertar</span>"
     },
     {
       "time": 80.5,
-      "fadeInDuration": 500,
-      "html": "Amor, no llores, veo luz en tus males"
+      "fadeInDuration": 10000,
+      "html": "<span class=\"hl-mixed\">Amoooooor</span>, no llores, veo <span class=\"hl-yellow\">luz </span>en tus <span class=\"hl-pastel\">males</span>"
     },
     {
       "time": 91.5,
-      "fadeInDuration": 500,
+      "fadeInDuration": 6000,
       "html": "Siguiéndote el corazón, bailando en un canto de zorzales"
     },
     {
@@ -110,83 +110,113 @@
     },
     {
       "time": 104,
-      "fadeInDuration": 500,
-      "html": "Niño, soy un hombre con tristeza, sé del peso en tu verdad"
+      "fadeInDuration": 5500,
+      "html": "Niño, soy un hombre con <span class=\"hl-red\">tristeza</span>, sé del peso en tu <span class=\"hl-green\">verdad</span>"
     },
     {
       "time": 110.5,
-      "fadeInDuration": 500,
-      "html": "Escaparte por robar porque robás para cenar"
+      "fadeInDuration": 4500,
+      "html": "Escaparte por robar porque <span class=\"hl-red\">robás </span>para <span class=\"hl-green\">cenar</span>"
     },
     {
       "time": 116,
-      "fadeInDuration": 500,
-      "html": "Vi tus dedos en el barro con olor a libertad"
+      "fadeInDuration": 5000,
+      "html": "Vi tus dedos en el <span class=\"hl-green\">barro </span>con olor a <span class=\"hl-mixed\">libertad</span>"
     },
     {
       "time": 121.5,
-      "fadeInDuration": 500,
-      "html": "Sé que te querés dormir pa' no volver a despertar"
+      "fadeInDuration": 4000,
+      "html": "Sé que te querés <span class=\"hl-pastel\">dormir </span>pa' no volver a <span class=\"hl-pastel\">despertar</span>"
     },
     {
       "time": 128,
+      "fadeInDuration": 2000,
+      "html": "Por el mundo vas de <span class=\"hl-gray\">pillo</span><span class=\"hl-gray\"></span>"
+    },
+    {
+      "time": 0,
       "fadeInDuration": 500,
-      "html": "Por el mundo vas de pillo con alma de caramelo"
+      "html": " "
+    },
+    {
+      "time": 131,
+      "fadeInDuration": 2000,
+      "html": "Con alma de <span class=\"hl-mixed\">caramelo</span>"
     },
     {
       "time": 133.5,
-      "fadeInDuration": 500,
-      "html": "Vi la vida en tus nudillos y su odio en tus hoyuelos (ah, ah, ah, ah)"
+      "fadeInDuration": 2000,
+      "html": "Vi la vida en tus <span class=\"hl-pastel\">nudillos</span>"
+    },
+    {
+      "time": 136,
+      "fadeInDuration": 2000,
+      "html": "Y su odio en tus hoyuelos"
     },
     {
       "time": 139,
-      "fadeInDuration": 500,
-      "html": "Le rezaste a unos amigos, pues no todos van al cielo"
+      "fadeInDuration": 2000,
+      "html": "Le rezaste a unos amigos,"
+    },
+    {
+      "time": 142,
+      "fadeInDuration": 2000,
+      "html": "Pues no todos van al cielo"
     },
     {
       "time": 144.5,
-      "fadeInDuration": 500,
-      "html": "Pero vos sos un grial"
+      "fadeInDuration": 3000,
+      "html": "Pero vos sos un <span class=\"hl-mixed\">griaaaaal</span>"
     },
     {
       "time": 148.5,
-      "fadeInDuration": 500,
-      "html": "Amor, no llores, veo luz en tus males"
+      "fadeInDuration": 10000,
+      "html": "Amooooor, no llores, veo <span class=\"hl-yellow\">luz </span>en tus <span class=\"hl-red\">males</span>"
     },
     {
       "time": 159,
-      "fadeInDuration": 500,
-      "html": "Siguiéndote el corazón, bailando en un canto de zorzal"
+      "fadeInDuration": 2000,
+      "html": "Siguiéndote el <span class=\"hl-mixed\">corazón</span>,"
+    },
+    {
+      "time": 162,
+      "fadeInDuration": 2000,
+      "html": "Bailando en un canto de zorzal"
     },
     {
       "time": 165.5,
-      "fadeInDuration": 500,
-      "html": "Amor, no llores, veo luz en tus males"
+      "fadeInDuration": 5000,
+      "html": "Amooooooor, <span class=\"hl-pastel\">no llores</span>,"
+    },
+    {
+      "time": 171,
+      "fadeInDuration": 4000,
+      "html": "Veo luz en tus <span class=\"hl-red\">males</span>"
     },
     {
       "time": 176,
-      "fadeInDuration": 500,
-      "html": "Siguiéndote el corazón"
+      "fadeInDuration": 2000,
+      "html": "Siguiéndote el <span class=\"hl-mixed\">corazón</span>"
     },
     {
       "time": 182.5,
-      "fadeInDuration": 500,
-      "html": "Hijo, me robaron tus ojitos los momentos que perdí"
+      "fadeInDuration": 6000,
+      "html": "Hijo, me robaron tus <span class=\"hl-pastel\">ojitos </span>los momentos que <span class=\"hl-pastel\">perdí</span>"
     },
     {
       "time": 189,
-      "fadeInDuration": 500,
-      "html": "Pedí tiempo a mi destino, y dijo, \"hoy te toca a ti\""
+      "fadeInDuration": 5000,
+      "html": "Pedí tiempo a mi destino, y dijo, <span class=\"hl-pink\">\"hoy te toca a ti\"</span>"
     },
     {
       "time": 194.5,
-      "fadeInDuration": 500,
-      "html": "Sé que un día serás grande, sé que un día entenderás"
+      "fadeInDuration": 5000,
+      "html": "Sé que un día serás grande, sé que un día <span class=\"hl-pastel\">entenderás</span>"
     },
     {
       "time": 200.5,
-      "fadeInDuration": 500,
-      "html": "Los consejos de tu viejo, estoy descansando en paz"
+      "fadeInDuration": 5000,
+      "html": "Los consejos de tu <span class=\"hl-pastel\">viejo</span>, estoy descansando en <span class=\"hl-green\">paz</span>"
     }
   ]
 }

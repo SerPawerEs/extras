@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; }
-:root { --bg: #0a0a0a; --text: #f5d0e0; --pink: #ff6eb4; --yellow: #ffe566; --pink-glow: rgba(255,110,180,.4); --yellow-glow: rgba(255,229,102,.4); }
+:root { --bg: #0a0a0a; --text: #f5d0e0; --pink: #ff6eb4; --yellow: #ffe566; --pink-glow: rgba(255,110,180,.4); --yellow-glow: rgba(255,229,102,.4); --cyan: #00f0ff; --cyan-glow: rgba(0,240,255,.4); --green: #00ff9d; --green-glow: rgba(0,255,157,.4); --red: #ff3333; --red-glow: rgba(255,51,51,.4); }
 body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
 
 .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity .8s ease, transform .8s ease; z-index: 10; }
@@ -45,7 +45,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 #lyrics-screen { opacity: 0; pointer-events: none; padding: 100px 20px 120px; justify-content: center; overflow: hidden; }
 #lyrics-screen.active { opacity: 1; pointer-events: auto; }
 .lyrics-container { width: 100%; max-width: 700px; display: flex; justify-content: center; align-items: center; min-height: 180px; padding: 0 10px; }
-.current-line { font-size: clamp(1.3rem, 3.5vw, 1.9rem); font-weight: 300; line-height: 1.6; text-align: center; letter-spacing: 1px; opacity: 0; transform: translateY(25px) scale(.99); transition: opacity .5s ease, transform .5s ease; width: 100%; word-wrap: break-word; }
+.current-line { font-size: clamp(1.3rem, 3.5vw, 1.9rem); font-weight: 300; line-height: 1.6; text-align: center; letter-spacing: 1px; opacity: 0; transform: translateY(25px) scale(.99); transition: opacity .5s ease, transform .5s ease; width: 100%; word-break: normal; overflow-wrap: break-word; hyphens: none; white-space: normal; }
+.word { display: inline; white-space: nowrap; }
 .current-line.visible { opacity: 1; transform: translateY(0) scale(1); }
 .letter { display: inline-block; opacity: 0; filter: blur(4px); transform: translateY(8px); transition: opacity .4s ease, filter .4s ease, transform .4s ease; }
 .letter.revealed { opacity: 1; filter: blur(0); transform: translateY(0); }
@@ -53,6 +54,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 .hl-yellow { color: var(--yellow); font-weight: 700; text-shadow: 0 0 10px var(--yellow-glow), 0 0 22px var(--yellow-glow); }
 .hl-mixed { background: linear-gradient(135deg, var(--pink), var(--yellow)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 900; filter: drop-shadow(0 0 7px var(--pink-glow)); }
 .hl-pastel { color: var(--text); font-weight: 500; font-style: italic; text-shadow: 0 0 14px rgba(245,208,224,.5); }
+.hl-cyan { color: var(--cyan); font-weight: 700; text-shadow: 0 0 8px var(--cyan-glow), 0 0 18px var(--cyan-glow); }
+.hl-green { color: var(--green); font-weight: 700; text-shadow: 0 0 8px var(--green-glow), 0 0 18px var(--green-glow); }
+.hl-red { color: var(--red); font-weight: 700; text-shadow: 0 0 8px var(--red-glow), 0 0 18px var(--red-glow); }
+.hl-gray { background: linear-gradient(135deg, #888, #fff, #ccc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 800; filter: drop-shadow(0 0 4px rgba(255,255,255,.3)); }
 .controls-toggle { position: fixed; bottom: 25px; right: 25px; width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--yellow); background: rgba(10,10,10,.85); color: var(--yellow); font-size: 1.4rem; cursor: pointer; z-index: 200; display: flex; align-items: center; justify-content: center; transition: all .3s ease; backdrop-filter: blur(4px); }
 .controls-toggle:hover { background: rgba(255,229,102,.15); box-shadow: 0 0 25px var(--yellow-glow); transform: scale(1.08); }
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,10,.88); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 300; opacity: 0; pointer-events: none; transition: opacity .35s ease; }

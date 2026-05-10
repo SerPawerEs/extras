@@ -7,17 +7,18 @@ async function initMenu() {
     const grid = document.getElementById('song-grid');
     grid.innerHTML = '';
     
-    if (!songs.length) {
+    if (!Array.isArray(songs) || !songs.length) {
       grid.innerHTML = '<p class="loading-msg">No hay canciones disponibles.</p>';
       return;
     }
 
     songs.forEach(song => {
       const card = document.createElement('a');
-      card.href = `player.html?song=${song.id}`;
+      // El parámetro ?song= usa exactamente el valor de "json"
+      card.href = `player.html?song=${song.json}`;
       card.className = 'song-card';
       card.innerHTML = `
-        <span class="song-name">${song.title}</span>
+        <span class="song-name">${song.displayname}</span>
         <span class="song-hint">Toca para reproducir</span>
       `;
       grid.appendChild(card);

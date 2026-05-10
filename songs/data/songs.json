@@ -1,3 +1,4 @@
 [
-  { "id": "doma", "title": "Doma", "dataFile": "data/doma.json" }
+  { "displayname": "Doma", "json": "doma" },
+  { "displayname": "Niño", "json": "niño" }
 ]
