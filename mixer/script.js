@@ -9,6 +9,7 @@ if (window.YT && window.YT.Player) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("v1.1")
     const helpBtn = document.getElementById('helpBtn');
     const helpModal = document.getElementById('helpModal');
     const closeModal = document.getElementById('closeModal');
