@@ -82,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
             volVal.textContent = `${Math.round(value * 100)}%`;
         };
 
-        // Asignación de volumen unificada (Local y YouTube)
         const setVolumeLevel = (value) => {
             updateVolumeUI(value);
             if (mode === 'local') {
@@ -342,10 +341,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Método universal para reproducir Local o YouTube manteniendo el tiempo exacto
         function ensureTrackPlayback(songFilename, youtubeUrl, startTime = 0) {
             if (youtubeUrl) {
-                initYouTubeWithRetry(youtubeUrl, true, startTime);
+                // Si ya está cargada la misma URL en YouTube, solo aseguramos que reproduzca desde su tiempo actual (o startSeconds)
+                if (currentYoutubeUrl === youtubeUrl && mode === 'youtube' && ytPlayer) {
+                    if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
+                        ytPlayer.playVideo();
+                    }
+                } else {
+                    initYouTubeWithRetry(youtubeUrl, true, startTime);
+                }
             } else if (songFilename) {
                 if (currentSongFilename === songFilename && mode === 'local') {
                     if (audio.paused) {
@@ -497,6 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
             getCurrentYoutubeUrl: () => currentYoutubeUrl,
             isPlaying,
             getCurrentTime,
+            getDuration,
             ensureTrackPlayback,
             setVolumeLevel,
             jumpTime,
@@ -551,10 +557,15 @@ document.addEventListener('DOMContentLoaded', () => {
             targetSong = localLibrary[0];
         }
 
-        const currentTime = outgoingDeck.getCurrentTime();
+        // CORRECCIÓN CLAVE: Si el deck entrante ya tenía cargado el mismo link de YouTube, 
+        // NO forzamos un reset ni un startSeconds desde 0 que heredara la duración del otro,
+        // sino que mantenemos su posición temporal actual exacta (o 0 si es nuevo).
+        let currentPos = 0;
+        if (incomingDeck.getCurrentYoutubeUrl() === targetYtUrl || incomingDeck.getCurrentSongFilename() === targetSong) {
+            currentPos = incomingDeck.getCurrentTime();
+        }
 
-        // Inicia la reproducción en el deck entrante desde el tiempo exacto
-        incomingDeck.ensureTrackPlayback(targetSong, targetYtUrl, currentTime);
+        incomingDeck.ensureTrackPlayback(targetSong, targetYtUrl, currentPos);
 
         let steps = 50;
         let stepTime = 5000 / steps;
