@@ -48,7 +48,7 @@
             <div class="search-container">
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInputLeft" placeholder="Busca canción local o pega link de YT Music/Spotify...">
+                    <input type="text" id="searchInputLeft" placeholder="Busca canción local o link de YouTube...">
                 </div>
                 <div class="search-results" id="searchResultsLeft"></div>
             </div>
@@ -61,13 +61,14 @@
                 </div>
                 <div class="track-info">
                     <h3 id="trackTitleLeft">Selecciona una canción</h3>
-                    <p id="trackArtistLeft">Carpeta / Enlace externo</p>
+                    <p id="trackArtistLeft">Carpeta songs.json / YouTube</p>
                 </div>
             </div>
 
-            <!-- Contenedor dinámico por si es elemento nativo o iframe externo -->
-            <div id="audioWrapperLeft" class="audio-wrapper">
+            <!-- Contenedor multimedia unificado -->
+            <div class="media-container">
                 <audio id="audioLeft" crossorigin="anonymous"></audio>
+                <div id="ytPlayerLeft" class="yt-embed-box"></div>
             </div>
 
             <div class="player-controls">
@@ -110,7 +111,7 @@
             <div class="search-container">
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInputRight" placeholder="Busca canción local o pega link de YT Music/Spotify...">
+                    <input type="text" id="searchInputRight" placeholder="Busca canción local o link de YouTube...">
                 </div>
                 <div class="search-results" id="searchResultsRight"></div>
             </div>
@@ -123,12 +124,13 @@
                 </div>
                 <div class="track-info">
                     <h3 id="trackTitleRight">Selecciona una canción</h3>
-                    <p id="trackArtistRight">Carpeta / Enlace externo</p>
+                    <p id="trackArtistRight">Carpeta songs.json / YouTube</p>
                 </div>
             </div>
 
-            <div id="audioWrapperRight" class="audio-wrapper">
+            <div class="media-container">
                 <audio id="audioRight" crossorigin="anonymous"></audio>
+                <div id="ytPlayerRight" class="yt-embed-box"></div>
             </div>
 
             <div class="player-controls">
@@ -164,6 +166,8 @@
 
     </div>
 
+    <!-- API oficial de YouTube -->
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script src="scripts.js"></script>
 </body>
 </html>

@@ -1,3 +1,10 @@
+let ytAPIReady = false;
+
+// Callback global requerida por la API de YouTube
+function onYouTubeIframeAPIReady() {
+    ytAPIReady = true;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Referencias Modal Ayuda
     const helpBtn = document.getElementById('helpBtn');
@@ -10,11 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === helpModal) helpModal.classList.remove('active');
     });
 
-    // Master Control Estado Global
     const masterPlayPauseBtn = document.getElementById('masterPlayPauseBtn');
     const masterIcon = document.getElementById('masterIcon');
 
-    // Biblioteca de canciones cargada desde JSON
     let localLibrary = [];
 
     async function loadSongsJSON() {
@@ -22,8 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('songs.json');
             if (response.ok) {
                 localLibrary = await response.json();
-            } else {
-                console.warn('No se encontró songs.json.');
             }
         } catch (error) {
             console.error('Error cargando songs.json:', error);
@@ -32,10 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadSongsJSON();
 
-    // Setup Deck (Izquierdo / Derecho)
+    // Setup Deck unificado (Audio Local o YouTube API)
     const setupDeck = (side) => {
-        let audio = document.getElementById(`audio${side}`);
-        const audioWrapper = document.getElementById(`audioWrapper${side}`);
+        const audio = document.getElementById(`audio${side}`);
+        const ytContainerId = `ytPlayer${side}`;
         const playBtn = document.getElementById(`play${side}Btn`);
         const playIcon = document.getElementById(`playIcon${side}`);
         const volInput = document.getElementById(`vol${side}`);
@@ -51,102 +54,130 @@ document.addEventListener('DOMContentLoaded', () => {
         const vinyl = document.getElementById(`vinyl${side}`);
 
         let isDraggingSeek = false;
-        let isExternalEmbed = false;
+        let mode = 'none'; // 'local' o 'youtube'
+        let ytPlayer = null;
+        let progressInterval = null;
 
-        // Play / Pausa individual
+        // Limpiar intervalos de tiempo anteriores
+        const clearProgressInterval = () => {
+            if (progressInterval) clearInterval(progressInterval);
+        };
+
+        // Play / Pausa unificado
         const togglePlay = () => {
-            if (isExternalEmbed) return; // Los embeds externos manejan su propia reproducción
-            if (!audio || !audio.src) return;
-            if (audio.paused) {
-                audio.play().catch(err => console.log("Play error:", err));
-                playIcon.classList.replace('fa-play', 'fa-pause');
-                vinyl.classList.add('spinning');
-            } else {
-                audio.pause();
-                playIcon.classList.replace('fa-pause', 'fa-play');
-                vinyl.classList.remove('spinning');
+            if (mode === 'local') {
+                if (!audio.src) return;
+                if (audio.paused) {
+                    audio.play();
+                    playIcon.classList.replace('fa-play', 'fa-pause');
+                    vinyl.classList.add('spinning');
+                } else {
+                    audio.pause();
+                    playIcon.classList.replace('fa-pause', 'fa-play');
+                    vinyl.classList.remove('spinning');
+                }
+            } else if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+                const state = ytPlayer.getPlayerState();
+                if (state === YT.PlayerState.PLAYING) {
+                    ytPlayer.pauseVideo();
+                    playIcon.classList.replace('fa-pause', 'fa-play');
+                    vinyl.classList.remove('spinning');
+                } else {
+                    ytPlayer.playVideo();
+                    playIcon.classList.replace('fa-play', 'fa-pause');
+                    vinyl.classList.add('spinning');
+                }
             }
             updateMasterState();
         };
 
         playBtn.addEventListener('click', togglePlay);
 
-        // Control de Volumen independiente
+        // Control de Volumen
         volInput.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
-            if (!isExternalEmbed && audio) audio.volume = val;
             volVal.textContent = `${Math.round(val * 100)}%`;
+            if (mode === 'local') {
+                audio.volume = val;
+            } else if (mode === 'youtube' && ytPlayer && typeof ytPlayer.setVolume === 'function') {
+                ytPlayer.setVolume(val * 100);
+            }
         });
 
-        // Control de Velocidad independiente
+        // Control de Velocidad
         speedSelect.addEventListener('change', (e) => {
-            if (!isExternalEmbed && audio) audio.playbackRate = parseFloat(e.target.value);
+            const rate = parseFloat(e.target.value);
+            if (mode === 'local') {
+                audio.playbackRate = rate;
+            } else if (mode === 'youtube' && ytPlayer && typeof ytPlayer.setPlaybackRate === 'function') {
+                ytPlayer.setPlaybackRate(rate);
+            }
         });
 
-        const setupAudioListeners = (targetAudio) => {
-            targetAudio.addEventListener('timeupdate', () => {
-                if (!isDraggingSeek && targetAudio.duration) {
-                    const progress = (targetAudio.currentTime / targetAudio.duration) * 100;
-                    seekInput.value = progress;
-                    currentTimeEl.textContent = formatTime(targetAudio.currentTime);
-                }
-            });
-
-            targetAudio.addEventListener('loadedmetadata', () => {
-                durationEl.textContent = formatTime(targetAudio.duration);
-            });
-
-            targetAudio.addEventListener('ended', () => {
+        // Listeners para Audio Local
+        audio.addEventListener('timeupdate', () => {
+            if (mode === 'local' && !isDraggingSeek && audio.duration) {
+                seekInput.value = (audio.currentTime / audio.duration) * 100;
+                currentTimeEl.textContent = formatTime(audio.currentTime);
+            }
+        });
+        audio.addEventListener('loadedmetadata', () => {
+            if (mode === 'local') durationEl.textContent = formatTime(audio.duration);
+        });
+        audio.addEventListener('ended', () => {
+            if (mode === 'local') {
                 playIcon.classList.replace('fa-pause', 'fa-play');
                 vinyl.classList.remove('spinning');
                 updateMasterState();
-            });
-        };
+            }
+        });
 
-        if (audio) setupAudioListeners(audio);
-
+        // Barra de progreso interactiva (Seek)
         seekInput.addEventListener('mousedown', () => isDraggingSeek = true);
         seekInput.addEventListener('touchstart', () => isDraggingSeek = true);
 
         seekInput.addEventListener('input', (e) => {
-            if (!isExternalEmbed && audio && audio.duration) {
-                const time = (parseFloat(e.target.value) / 100) * audio.duration;
-                currentTimeEl.textContent = formatTime(time);
+            const val = parseFloat(e.target.value);
+            if (mode === 'local' && audio.duration) {
+                currentTimeEl.textContent = formatTime((val / 100) * audio.duration);
+            } else if (mode === 'youtube' && ytPlayer && ytPlayer.getDuration) {
+                currentTimeEl.textContent = formatTime((val / 100) * ytPlayer.getDuration());
             }
         });
 
         seekInput.addEventListener('change', (e) => {
-            if (!isExternalEmbed && audio && audio.duration) {
-                audio.currentTime = (parseFloat(e.target.value) / 100) * audio.duration;
+            const val = parseFloat(e.target.value);
+            if (mode === 'local' && audio.duration) {
+                audio.currentTime = (val / 100) * audio.duration;
+            } else if (mode === 'youtube' && ytPlayer && ytPlayer.seekTo) {
+                const targetTime = (val / 100) * ytPlayer.getDuration();
+                ytPlayer.seekTo(targetTime, true);
             }
             isDraggingSeek = false;
         });
 
-        // Evento del Buscador (Local + Detección de Enlaces Externos)
+        // Buscador y Detección
         searchInput.addEventListener('input', (e) => {
             const query = e.target.value.trim();
-            
             if (query === "") {
                 searchResults.classList.remove('active');
                 searchResults.innerHTML = '';
                 return;
             }
 
-            // Detectar si ingresó un enlace de Spotify o YouTube / YouTube Music
-            if (query.startsWith('http://') || query.startsWith('https://')) {
+            // Detectar Link de YouTube
+            if (query.includes('youtube.com') || query.includes('youtu.be') || query.includes('music.youtube.com')) {
                 searchResults.classList.remove('active');
-                isExternalEmbed = true;
-                handleExternalLink(query, side, trackTitle, trackArtist, audioWrapper, vinyl, playIcon);
+                loadYouTubeTrack(query);
                 return;
             }
 
-            // Filtrar canciones locales desde songs.json
+            // Filtrar canciones de songs.json
             const filtered = localLibrary.filter(song => song.toLowerCase().includes(query.toLowerCase()));
-            
             searchResults.innerHTML = '';
             if (filtered.length > 0) {
                 filtered.forEach(filename => {
-                    const cleanName = filename.replace(/\.[^/.]+$/, ""); // Quita la extensión
+                    const cleanName = filename.replace(/\.[^/.]+$/, "");
                     const item = document.createElement('div');
                     item.className = 'search-item';
                     item.innerHTML = `
@@ -157,35 +188,110 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `;
                     item.addEventListener('click', () => {
-                        isExternalEmbed = false;
-                        // Restaurar elemento <audio> nativo si antes había un iframe
-                        if (!document.getElementById(`audio${side}`)) {
-                            audioWrapper.innerHTML = `<audio id="audio${side}" crossorigin="anonymous"></audio>`;
-                            audio = document.getElementById(`audio${side}`);
-                            setupAudioListeners(audio);
-                        }
-
-                        audio.src = `songs/${filename}`;
-                        audio.load();
-                        trackTitle.textContent = cleanName;
-                        trackArtist.textContent = "Canción Local";
+                        loadLocalTrack(filename, cleanName);
                         searchResults.classList.remove('active');
                         searchInput.value = cleanName;
-
-                        audio.play().then(() => {
-                            playIcon.classList.replace('fa-play', 'fa-pause');
-                            vinyl.classList.add('spinning');
-                            updateMasterState();
-                        }).catch(err => console.log("Play error:", err));
                     });
                     searchResults.appendChild(item);
                 });
                 searchResults.classList.add('active');
             } else {
-                searchResults.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-muted)">No se encontró en "songs.json" (o pega un link)</div>';
+                searchResults.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-muted)">No encontrado (o pega link de YouTube)</div>';
                 searchResults.classList.add('active');
             }
         });
+
+        function loadLocalTrack(filename, cleanName) {
+            clearProgressInterval();
+            mode = 'local';
+            if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+                ytPlayer.destroy();
+                ytPlayer = null;
+            }
+
+            audio.src = `songs/${filename}`;
+            audio.load();
+            trackTitle.textContent = cleanName;
+            trackArtist.textContent = "Reproductor Local";
+
+            audio.play().then(() => {
+                playIcon.classList.replace('fa-play', 'fa-pause');
+                vinyl.classList.add('spinning');
+                updateMasterState();
+            }).catch(err => console.log(err));
+        }
+
+        function loadYouTubeTrack(url) {
+            let videoId = "";
+            if (url.includes('v=')) {
+                videoId = url.split('v=')[1]?.split('&')[0];
+            } else if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1]?.split('?')[0];
+            } else if (url.includes('embed/')) {
+                videoId = url.split('embed/')[1]?.split('?')[0];
+            }
+
+            if (!videoId) {
+                alert("Enlace de YouTube no válido.");
+                return;
+            }
+
+            clearProgressInterval();
+            mode = 'youtube';
+            audio.pause();
+            audio.src = "";
+
+            trackTitle.textContent = "Audio de YouTube";
+            trackArtist.textContent = `ID: ${videoId}`;
+
+            if (!ytAPIReady) {
+                alert("La API de YouTube está cargando, intenta de nuevo en un segundo.");
+                return;
+            }
+
+            if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
+                ytPlayer.loadVideoById(videoId);
+            } else {
+                ytPlayer = new YT.Player(ytContainerId, {
+                    height: '0',
+                    width: '0',
+                    videoId: videoId,
+                    playerVars: { 'autoplay': 1, 'controls': 0 },
+                    events: {
+                        'onReady': (event) => {
+                            event.target.playVideo();
+                            event.target.setVolume(volInput.value * 100);
+                            playIcon.classList.replace('fa-play', 'fa-pause');
+                            vinyl.classList.add('spinning');
+                            updateMasterState();
+                        },
+                        'onStateChange': (event) => {
+                            if (event.data === YT.PlayerState.PLAYING) {
+                                playIcon.classList.replace('fa-play', 'fa-pause');
+                                vinyl.classList.add('spinning');
+                            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                                playIcon.classList.replace('fa-pause', 'fa-play');
+                                vinyl.classList.remove('spinning');
+                            }
+                            updateMasterState();
+                        }
+                    }
+                });
+            }
+
+            // Sincronizar barra de progreso para YouTube
+            progressInterval = setInterval(() => {
+                if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+                    const current = ytPlayer.getCurrentTime() || 0;
+                    const duration = ytPlayer.getDuration() || 1;
+                    currentTimeEl.textContent = formatTime(current);
+                    durationEl.textContent = formatTime(duration);
+                    if (!isDraggingSeek) {
+                        seekInput.value = (current / duration) * 100;
+                    }
+                }
+            }, 500);
+        }
 
         document.addEventListener('click', (e) => {
             if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
@@ -194,8 +300,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         return {
+            get mode() { return mode; },
             get audio() { return audio; },
-            get isExternal() { return isExternalEmbed; },
+            get ytPlayer() { return ytPlayer; },
             playBtn,
             playIcon,
             vinyl,
@@ -206,76 +313,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const deckLeft = setupDeck('Left');
     const deckRight = setupDeck('Right');
 
-    // Manejador de Enlaces Externos (YouTube / Spotify)
-    function handleExternalLink(url, side, titleEl, artistEl, wrapperEl, vinyl, playIcon) {
-        let embedUrl = "";
-        let platformName = "";
-
-        if (url.includes('spotify.com')) {
-            platformName = "Spotify Embed";
-            const trackIdMatch = url.match(/track\/([a-zA-Z0-9]+)/);
-            if (trackIdMatch) {
-                embedUrl = `https://open.spotify.com/embed/track/${trackIdMatch[1]}?utm_source=generator&theme=0`;
-            }
-        } else if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('music.youtube.com')) {
-            platformName = "YouTube Music / Video";
-            let videoId = "";
-            if (url.includes('v=')) {
-                videoId = url.split('v=')[1]?.split('&')[0];
-            } else if (url.includes('youtu.be/')) {
-                videoId = url.split('youtu.be/')[1]?.split('?')[0];
-            } else if (url.includes('embed/')) {
-                videoId = url.split('embed/')[1]?.split('?')[0];
-            }
-            if (videoId) {
-                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-            }
-        }
-
-        if (embedUrl) {
-            titleEl.textContent = "Contenido Externo";
-            artistEl.textContent = platformName;
-            vinyl.classList.add('spinning');
-            playIcon.classList.replace('fa-play', 'fa-pause');
-
-            wrapperEl.innerHTML = `<iframe src="${embedUrl}" width="100%" height="80" allow="autoplay; encrypted-media; fullscreen" loading="lazy"></iframe>`;
-            updateMasterState();
-        } else {
-            alert("No se pudo reconocer el formato del enlace de Spotify o YouTube.");
-        }
-    }
-
-    // Master Control
+    // Master Control Central
     let preMasterStates = { left: false, right: false };
 
     masterPlayPauseBtn.addEventListener('click', toggleMasterPlayPause);
 
     function toggleMasterPlayPause() {
-        const leftActive = deckLeft.isExternal ? false : (deckLeft.audio && !deckLeft.audio.paused);
-        const rightActive = deckRight.isExternal ? false : (deckRight.audio && !deckRight.audio.paused);
+        const leftPlaying = deckLeft.mode === 'local' ? !deckLeft.audio.paused : (deckLeft.ytPlayer && typeof deckLeft.ytPlayer.getPlayerState === 'function' && deckLeft.ytPlayer.getPlayerState() === YT.PlayerState.PLAYING);
+        const rightPlaying = deckRight.mode === 'local' ? !deckRight.audio.paused : (deckRight.ytPlayer && typeof deckRight.ytPlayer.getPlayerState === 'function' && deckRight.ytPlayer.getPlayerState() === YT.PlayerState.PLAYING);
 
-        if (leftActive || rightActive) {
-            preMasterStates.left = leftActive;
-            preMasterStates.right = rightActive;
-
-            if (leftActive) deckLeft.togglePlay();
-            if (rightActive) deckRight.togglePlay();
+        if (leftPlaying || rightPlaying) {
+            preMasterStates.left = leftPlaying;
+            preMasterStates.right = rightPlaying;
+            if (leftPlaying) deckLeft.togglePlay();
+            if (rightPlaying) deckRight.togglePlay();
         } else {
-            if (preMasterStates.left && deckLeft.audio && deckLeft.audio.src) deckLeft.togglePlay();
-            if (preMasterStates.right && deckRight.audio && deckRight.audio.src) deckRight.togglePlay();
-            
+            if (preMasterStates.left) deckLeft.togglePlay();
+            if (preMasterStates.right) deckRight.togglePlay();
             if (!preMasterStates.left && !preMasterStates.right) {
-                if (!deckLeft.isExternal && deckLeft.audio && deckLeft.audio.src) deckLeft.togglePlay();
-                if (!deckRight.isExternal && deckRight.audio && deckRight.audio.src) deckRight.togglePlay();
+                if (deckLeft.mode !== 'none') deckLeft.togglePlay();
+                if (deckRight.mode !== 'none') deckRight.togglePlay();
             }
         }
         updateMasterState();
     }
 
     function updateMasterState() {
-        const leftPlaying = !deckLeft.isExternal && deckLeft.audio && !deckLeft.audio.paused && deckLeft.audio.src;
-        const rightPlaying = !deckRight.isExternal && deckRight.audio && !deckRight.audio.paused && deckRight.audio.src;
-        
+        const leftPlaying = deckLeft.mode === 'local' ? !deckLeft.audio.paused && deckLeft.audio.src : (deckLeft.ytPlayer && typeof deckLeft.ytPlayer.getPlayerState === 'function' && deckLeft.ytPlayer.getPlayerState() === YT.PlayerState.PLAYING);
+        const rightPlaying = deckRight.mode === 'local' ? !deckRight.audio.paused && deckRight.audio.src : (deckRight.ytPlayer && typeof deckRight.ytPlayer.getPlayerState === 'function' && deckRight.ytPlayer.getPlayerState() === YT.PlayerState.PLAYING);
+
         if (leftPlaying || rightPlaying) {
             masterIcon.classList.replace('fa-play', 'fa-pause');
             masterPlayPauseBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
@@ -292,10 +358,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     }
 
-    // Atajos de teclado
+    // Atajos de Teclado
     document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT') return;
-
         const key = e.key.toUpperCase();
 
         if (key === 'Q') deckLeft.togglePlay();

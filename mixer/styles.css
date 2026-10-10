@@ -25,7 +25,6 @@ body {
     overflow-x: hidden;
 }
 
-/* Botón de Ayuda */
 .help-btn {
     position: fixed;
     top: 20px;
@@ -51,7 +50,6 @@ body {
     transform: scale(1.05);
 }
 
-/* Modal */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -132,7 +130,6 @@ kbd {
     background: var(--accent-hover);
 }
 
-/* Master Control Bar */
 .master-control-bar {
     position: fixed;
     top: 15px;
@@ -162,7 +159,6 @@ kbd {
     box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
 }
 
-/* Main Container Divisor (50/50 exacto) */
 .main-container {
     display: flex;
     width: 100vw;
@@ -194,7 +190,6 @@ kbd {
     gap: 8px;
 }
 
-/* Buscador local y links */
 .search-container {
     position: relative;
     margin-bottom: 20px;
@@ -277,7 +272,6 @@ kbd {
     color: var(--text-muted);
 }
 
-/* Display / Vinilo */
 .player-display {
     flex: 1;
     display: flex;
@@ -343,18 +337,23 @@ kbd {
     color: var(--text-muted);
 }
 
-.audio-wrapper {
+.media-container {
     width: 100%;
     margin-bottom: 10px;
 }
 
-.audio-wrapper iframe {
+/* Contenedor del reproductor YT oculto o compacto para mantener diseño minimalista */
+.yt-embed-box {
     width: 100%;
+    height: 0px;
+    overflow: hidden;
     border-radius: 12px;
-    border: none;
+}
+.yt-embed-box.active {
+    height: 120px; /* Se muestra pequeño o se puede ajustar para depurar */
+    margin-bottom: 10px;
 }
 
-/* Controles de Reproducción */
 .player-controls {
     background: var(--bg-color);
     border: 1px solid var(--panel-border);
