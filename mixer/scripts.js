@@ -13,11 +13,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // Master Control Estado Global
     const masterPlayPauseBtn = document.getElementById('masterPlayPauseBtn');
     const masterIcon = document.getElementById('masterIcon');
-    let masterPlayingState = false;
+
+    // Biblioteca de canciones cargada desde JSON
+    let localLibrary = [];
+
+    // Cargar la lista de canciones desde songs.json
+    async function loadSongsJSON() {
+        try {
+            const response = await fetch('songs.json');
+            if (response.ok) {
+                localLibrary = await response.json();
+            } else {
+                console.warn('No se encontró songs.json, usando lista por defecto.');
+            }
+        } catch (error) {
+            console.error('Error cargando songs.json:', error);
+        }
+    }
+
+    loadSongsJSON();
 
     // Setup Deck (Izquierdo / Derecho)
     const setupDeck = (side) => {
-        const audio = document.getElementById(`audio${side}`);
+        let audio = document.getElementById(`audio${side}`);
+        const audioWrapper = document.getElementById(`audioWrapper${side}`);
         const playBtn = document.getElementById(`play${side}Btn`);
         const playIcon = document.getElementById(`playIcon${side}`);
         const volInput = document.getElementById(`vol${side}`);
@@ -36,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Play / Pausa individual
         const togglePlay = () => {
-            if (!audio.src) return;
+            if (!audio || !audio.src) return;
             if (audio.paused) {
                 audio.play().catch(err => console.log("Play error:", err));
                 playIcon.classList.replace('fa-play', 'fa-pause');
@@ -54,68 +73,110 @@ document.addEventListener('DOMContentLoaded', () => {
         // Control de Volumen independiente
         volInput.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
-            audio.volume = val;
+            if (audio) audio.volume = val;
             volVal.textContent = `${Math.round(val * 100)}%`;
         });
 
         // Control de Velocidad independiente
         speedSelect.addEventListener('change', (e) => {
-            audio.playbackRate = parseFloat(e.target.value);
+            if (audio) audio.playbackRate = parseFloat(e.target.value);
         });
 
-        // Actualizar barra de tiempo y progreso
-        audio.addEventListener('timeupdate', () => {
-            if (!isDraggingSeek && audio.duration) {
-                const progress = (audio.currentTime / audio.duration) * 100;
-                seekInput.value = progress;
-                currentTimeEl.textContent = formatTime(audio.currentTime);
-            }
-        });
+        // Eventos de audio nativo
+        const setupAudioListeners = (targetAudio) => {
+            targetAudio.addEventListener('timeupdate', () => {
+                if (!isDraggingSeek && targetAudio.duration) {
+                    const progress = (targetAudio.currentTime / targetAudio.duration) * 100;
+                    seekInput.value = progress;
+                    currentTimeEl.textContent = formatTime(targetAudio.currentTime);
+                }
+            });
 
-        audio.addEventListener('loadedmetadata', () => {
-            durationEl.textContent = formatTime(audio.duration);
-        });
+            targetAudio.addEventListener('loadedmetadata', () => {
+                durationEl.textContent = formatTime(targetAudio.duration);
+            });
+
+            targetAudio.addEventListener('ended', () => {
+                playIcon.classList.replace('fa-pause', 'fa-play');
+                vinyl.classList.remove('spinning');
+                updateMasterState();
+            });
+        };
+
+        if (audio) setupAudioListeners(audio);
 
         seekInput.addEventListener('mousedown', () => isDraggingSeek = true);
         seekInput.addEventListener('touchstart', () => isDraggingSeek = true);
 
         seekInput.addEventListener('input', (e) => {
-            if (audio.duration) {
+            if (audio && audio.duration) {
                 const time = (parseFloat(e.target.value) / 100) * audio.duration;
                 currentTimeEl.textContent = formatTime(time);
             }
         });
 
         seekInput.addEventListener('change', (e) => {
-            if (audio.duration) {
+            if (audio && audio.duration) {
                 audio.currentTime = (parseFloat(e.target.value) / 100) * audio.duration;
             }
             isDraggingSeek = false;
         });
 
-        audio.addEventListener('ended', () => {
-            playIcon.classList.replace('fa-pause', 'fa-play');
-            vinyl.classList.remove('spinning');
-            updateMasterState();
-        });
-
-        // Buscador de música (Deezer API con Proxy CORS)
-        let searchTimeout;
+        // Evento del Buscador
         searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
             const query = e.target.value.trim();
-            if (query.length < 2) {
+            
+            if (query === "") {
                 searchResults.classList.remove('active');
                 searchResults.innerHTML = '';
                 return;
             }
 
-            searchTimeout = setTimeout(() => {
-                searchDeezer(query, searchResults, trackTitle, trackArtist, audio, playIcon, vinyl);
-            }, 400);
+            // Filtrar canciones de songs.json
+            const filtered = localLibrary.filter(song => song.toLowerCase().includes(query.toLowerCase()));
+            
+            searchResults.innerHTML = '';
+            if (filtered.length > 0) {
+                filtered.forEach(filename => {
+                    const cleanName = filename.replace(/\.[^/.]+$/, ""); // Quita la extensión (.mp3, .wav, etc.)
+                    const item = document.createElement('div');
+                    item.className = 'search-item';
+                    item.innerHTML = `
+                        <i class="fa-solid fa-music"></i>
+                        <div class="search-item-info">
+                            <h4>${cleanName}</h4>
+                            <p>songs/${filename}</p>
+                        </div>
+                    `;
+                    item.addEventListener('click', () => {
+                        if (!document.getElementById(`audio${side}`)) {
+                            audioWrapper.innerHTML = `<audio id="audio${side}" crossorigin="anonymous"></audio>`;
+                            audio = document.getElementById(`audio${side}`);
+                            setupAudioListeners(audio);
+                        }
+
+                        audio.src = `songs/${filename}`;
+                        audio.load();
+                        trackTitle.textContent = cleanName;
+                        trackArtist.textContent = "Canción Local";
+                        searchResults.classList.remove('active');
+                        searchInput.value = cleanName;
+
+                        audio.play().then(() => {
+                            playIcon.classList.replace('fa-play', 'fa-pause');
+                            vinyl.classList.add('spinning');
+                            updateMasterState();
+                        }).catch(err => console.log("Play error:", err));
+                    });
+                    searchResults.appendChild(item);
+                });
+                searchResults.classList.add('active');
+            } else {
+                searchResults.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-muted)">No se encontró en "songs.json"</div>';
+                searchResults.classList.add('active');
+            }
         });
 
-        // Ocultar resultados al hacer clic fuera
         document.addEventListener('click', (e) => {
             if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
                 searchResults.classList.remove('active');
@@ -123,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         return {
-            audio,
+            get audio() { return audio; },
             playBtn,
             playIcon,
             vinyl,
@@ -134,83 +195,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const deckLeft = setupDeck('Left');
     const deckRight = setupDeck('Right');
 
-    // Función de búsqueda con Deezer vía corsproxy.io
-    async function searchDeezer(query, resultsContainer, titleEl, artistEl, audioElement, playIcon, vinyl) {
-        try {
-            const targetUrl = `https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=6`;
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-            
-            const res = await fetch(proxyUrl);
-            const parsed = await res.json();
-
-            resultsContainer.innerHTML = '';
-            if (parsed.data && parsed.data.length > 0) {
-                parsed.data.forEach(track => {
-                    const item = document.createElement('div');
-                    item.className = 'search-item';
-                    item.innerHTML = `
-                        <img src="${track.album.cover_medium}" alt="cover">
-                        <div class="search-item-info">
-                            <h4>${track.title}</h4>
-                            <p>${track.artist.name}</p>
-                        </div>
-                    `;
-                    item.addEventListener('click', () => {
-                        audioElement.src = track.preview; // Preview de 30s de Deezer
-                        audioElement.load();
-                        titleEl.textContent = track.title;
-                        artistEl.textContent = track.artist.name;
-                        resultsContainer.classList.remove('active');
-                        audioElement.play().then(() => {
-                            playIcon.classList.replace('fa-play', 'fa-pause');
-                            vinyl.classList.add('spinning');
-                            updateMasterState();
-                        }).catch(e => console.log("Error al reproducir:", e));
-                    });
-                    resultsContainer.appendChild(item);
-                });
-                resultsContainer.classList.add('active');
-            } else {
-                resultsContainer.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-muted)">No se encontraron canciones</div>';
-                resultsContainer.classList.add('active');
-            }
-        } catch (e) {
-            console.error("Error en búsqueda:", e);
-            resultsContainer.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-muted)">Error al buscar música</div>';
-            resultsContainer.classList.add('active');
-        }
-    }
-
-    // Master Play/Pausa (Control Central)
+    // Master Control
     let preMasterStates = { left: false, right: false };
 
     masterPlayPauseBtn.addEventListener('click', toggleMasterPlayPause);
 
     function toggleMasterPlayPause() {
-        const leftPlaying = !deckLeft.audio.paused;
-        const rightPlaying = !deckRight.audio.paused;
+        const leftActive = deckLeft.audio && !deckLeft.audio.paused;
+        const rightActive = deckRight.audio && !deckRight.audio.paused;
 
-        if (leftPlaying || rightPlaying) {
-            preMasterStates.left = leftPlaying;
-            preMasterStates.right = rightPlaying;
+        if (leftActive || rightActive) {
+            preMasterStates.left = leftActive;
+            preMasterStates.right = rightActive;
 
-            if (leftPlaying) deckLeft.togglePlay();
-            if (rightPlaying) deckRight.togglePlay();
+            if (leftActive) deckLeft.togglePlay();
+            if (rightActive) deckRight.togglePlay();
         } else {
-            if (preMasterStates.left && deckLeft.audio.src) deckLeft.togglePlay();
-            if (preMasterStates.right && deckRight.audio.src) deckRight.togglePlay();
+            if (preMasterStates.left && deckLeft.audio && deckLeft.audio.src) deckLeft.togglePlay();
+            if (preMasterStates.right && deckRight.audio && deckRight.audio.src) deckRight.togglePlay();
             
             if (!preMasterStates.left && !preMasterStates.right) {
-                if (deckLeft.audio.src) deckLeft.togglePlay();
-                if (deckRight.audio.src) deckRight.togglePlay();
+                if (deckLeft.audio && deckLeft.audio.src) deckLeft.togglePlay();
+                if (deckRight.audio && deckRight.audio.src) deckRight.togglePlay();
             }
         }
         updateMasterState();
     }
 
     function updateMasterState() {
-        const anyPlaying = (!deckLeft.audio.paused && deckLeft.audio.src) || (!deckRight.audio.paused && deckRight.audio.src);
-        if (anyPlaying) {
+        const leftPlaying = deckLeft.audio && !deckLeft.audio.paused && deckLeft.audio.src;
+        const rightPlaying = deckRight.audio && !deckRight.audio.paused && deckRight.audio.src;
+        
+        if (leftPlaying || rightPlaying) {
             masterIcon.classList.replace('fa-play', 'fa-pause');
             masterPlayPauseBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
         } else {
@@ -219,25 +235,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Utilidad Formato de Tiempo
     function formatTime(seconds) {
+        if (isNaN(seconds)) return "0:00";
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     }
 
-    // Accesos Directos por Teclado
+    // Atajos de teclado
     document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT') return;
 
         const key = e.key.toUpperCase();
 
-        if (key === 'Q') {
-            deckLeft.togglePlay();
-        }
-        else if (key === 'P') {
-            deckRight.togglePlay();
-        }
+        if (key === 'Q') deckLeft.togglePlay();
+        else if (key === 'P') deckRight.togglePlay();
         else if (e.code === 'Space') {
             e.preventDefault();
             toggleMasterPlayPause();
@@ -262,18 +274,10 @@ document.addEventListener('DOMContentLoaded', () => {
             volInput.value = Math.max(0, parseFloat(volInput.value) - 0.05);
             volInput.dispatchEvent(new Event('input'));
         }
-        else if (key === 'E') {
-            adjustSpeed('Left', 0.25);
-        }
-        else if (key === 'D') {
-            adjustSpeed('Left', -0.25);
-        }
-        else if (key === 'I') {
-            adjustSpeed('Right', 0.25);
-        }
-        else if (key === 'K') {
-            adjustSpeed('Right', -0.25);
-        }
+        else if (key === 'E') adjustSpeed('Left', 0.25);
+        else if (key === 'D') adjustSpeed('Left', -0.25);
+        else if (key === 'I') adjustSpeed('Right', 0.25);
+        else if (key === 'K') adjustSpeed('Right', -0.25);
     });
 
     function adjustSpeed(side, delta) {

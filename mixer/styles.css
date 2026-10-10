@@ -194,7 +194,7 @@ kbd {
     gap: 8px;
 }
 
-/* Buscador de música */
+/* Buscador local y links */
 .search-container {
     position: relative;
     margin-bottom: 20px;
@@ -225,7 +225,7 @@ kbd {
     border: none;
     color: var(--text-main);
     width: 100%;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     outline: none;
 }
 
@@ -252,7 +252,7 @@ kbd {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 15px;
+    padding: 12px 15px;
     cursor: pointer;
     transition: background 0.15s;
     border-bottom: 1px solid rgba(255,255,255,0.03);
@@ -262,24 +262,18 @@ kbd {
     background: rgba(99, 102, 241, 0.15);
 }
 
-.search-item img {
-    width: 40px;
-    height: 40px;
-    border-radius: 6px;
-    object-fit: cover;
+.search-item i {
+    font-size: 1.2rem;
+    color: var(--accent);
 }
 
 .search-item-info h4 {
     font-size: 0.9rem;
     color: var(--text-main);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 300px;
 }
 
 .search-item-info p {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
 }
 
@@ -347,6 +341,17 @@ kbd {
 .track-info p {
     font-size: 0.9rem;
     color: var(--text-muted);
+}
+
+.audio-wrapper {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.audio-wrapper iframe {
+    width: 100%;
+    border-radius: 12px;
+    border: none;
 }
 
 /* Controles de Reproducción */
@@ -432,7 +437,6 @@ kbd {
     cursor: pointer;
 }
 
-/* Responsive básico para pantallas pequeñas */
 @media(max-width: 900px) {
     .main-container {
         flex-direction: column;

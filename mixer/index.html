@@ -48,7 +48,7 @@
             <div class="search-container">
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInputLeft" placeholder="Buscar música (Deezer)...">
+                    <input type="text" id="searchInputLeft" placeholder="Busca canción local o pega link de YT Music/Spotify...">
                 </div>
                 <div class="search-results" id="searchResultsLeft"></div>
             </div>
@@ -61,11 +61,14 @@
                 </div>
                 <div class="track-info">
                     <h3 id="trackTitleLeft">Selecciona una canción</h3>
-                    <p id="trackArtistLeft">Artista desconocido</p>
+                    <p id="trackArtistLeft">Carpeta / Enlace externo</p>
                 </div>
             </div>
 
-            <audio id="audioLeft" crossorigin="anonymous"></audio>
+            <!-- Contenedor dinámico por si es elemento nativo o iframe externo -->
+            <div id="audioWrapperLeft" class="audio-wrapper">
+                <audio id="audioLeft" crossorigin="anonymous"></audio>
+            </div>
 
             <div class="player-controls">
                 <div class="time-slider-container">
@@ -107,7 +110,7 @@
             <div class="search-container">
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInputRight" placeholder="Buscar música (Deezer)...">
+                    <input type="text" id="searchInputRight" placeholder="Busca canción local o pega link de YT Music/Spotify...">
                 </div>
                 <div class="search-results" id="searchResultsRight"></div>
             </div>
@@ -120,11 +123,13 @@
                 </div>
                 <div class="track-info">
                     <h3 id="trackTitleRight">Selecciona una canción</h3>
-                    <p id="trackArtistRight">Artista desconocido</p>
+                    <p id="trackArtistRight">Carpeta / Enlace externo</p>
                 </div>
             </div>
 
-            <audio id="audioRight" crossorigin="anonymous"></audio>
+            <div id="audioWrapperRight" class="audio-wrapper">
+                <audio id="audioRight" crossorigin="anonymous"></audio>
+            </div>
 
             <div class="player-controls">
                 <div class="time-slider-container">
