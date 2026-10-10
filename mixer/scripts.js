@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const setupDeck = (side) => {
         const audio = document.getElementById(`audio${side}`);
         const ytContainerId = `ytPlayer${side}`;
+        const ytContainerEl = document.getElementById(ytContainerId);
         const playBtn = document.getElementById(`play${side}Btn`);
         const playIcon = document.getElementById(`playIcon${side}`);
         const volInput = document.getElementById(`vol${side}`);
@@ -58,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let ytPlayer = null;
         let progressInterval = null;
 
-        // Limpiar intervalos de tiempo anteriores
         const clearProgressInterval = () => {
             if (progressInterval) clearInterval(progressInterval);
         };
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Detectar Link de YouTube
             if (query.includes('youtube.com') || query.includes('youtu.be') || query.includes('music.youtube.com')) {
                 searchResults.classList.remove('active');
-                loadYouTubeTrack(query);
+                initYouTubeWithRetry(query);
                 return;
             }
 
@@ -204,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function loadLocalTrack(filename, cleanName) {
             clearProgressInterval();
             mode = 'local';
+            ytContainerEl.classList.remove('active');
             if (ytPlayer && typeof ytPlayer.destroy === 'function') {
                 ytPlayer.destroy();
                 ytPlayer = null;
@@ -219,6 +220,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 vinyl.classList.add('spinning');
                 updateMasterState();
             }).catch(err => console.log(err));
+        }
+
+        // Sistema de reintento automático si la API de YouTube toma 1 segundo en cargar
+        function initYouTubeWithRetry(url, retries = 5) {
+            if (!ytAPIReady && retries > 0) {
+                setTimeout(() => initYouTubeWithRetry(url, retries - 1), 300);
+                return;
+            }
+            if (!ytAPIReady) {
+                alert("No se pudo conectar con la API de YouTube. Revisa tu conexión a internet.");
+                return;
+            }
+            loadYouTubeTrack(url);
         }
 
         function loadYouTubeTrack(url) {
@@ -241,22 +255,18 @@ document.addEventListener('DOMContentLoaded', () => {
             audio.pause();
             audio.src = "";
 
+            ytContainerEl.classList.add('active');
             trackTitle.textContent = "Audio de YouTube";
             trackArtist.textContent = `ID: ${videoId}`;
-
-            if (!ytAPIReady) {
-                alert("La API de YouTube está cargando, intenta de nuevo en un segundo.");
-                return;
-            }
 
             if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
                 ytPlayer.loadVideoById(videoId);
             } else {
                 ytPlayer = new YT.Player(ytContainerId, {
-                    height: '0',
-                    width: '0',
+                    height: '90',
+                    width: '100%',
                     videoId: videoId,
-                    playerVars: { 'autoplay': 1, 'controls': 0 },
+                    playerVars: { 'autoplay': 1, 'controls': 1, 'modestbranding': 1 },
                     events: {
                         'onReady': (event) => {
                             event.target.playVideo();

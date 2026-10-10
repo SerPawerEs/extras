@@ -342,16 +342,19 @@ kbd {
     margin-bottom: 10px;
 }
 
-/* Contenedor del reproductor YT oculto o compacto para mantener diseño minimalista */
+/* Contenedor del reproductor YT integrado */
 .yt-embed-box {
     width: 100%;
-    height: 0px;
-    overflow: hidden;
+    height: 90px; /* Tamaño compacto visible para cumplir con las políticas del navegador */
     border-radius: 12px;
-}
-.yt-embed-box.active {
-    height: 120px; /* Se muestra pequeño o se puede ajustar para depurar */
+    overflow: hidden;
     margin-bottom: 10px;
+    background: #000;
+    display: none; /* Se muestra solo cuando se carga un video de YouTube */
+}
+
+.yt-embed-box.active {
+    display: block;
 }
 
 .player-controls {
