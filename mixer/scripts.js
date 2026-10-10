@@ -1,8 +1,12 @@
 let ytAPIReady = false;
 
-// Callback global requerida por la API de YouTube
-function onYouTubeIframeAPIReady() {
+// Asegurar que la API se detecte correctamente incluso si ya cargó
+if (window.YT && window.YT.Player) {
     ytAPIReady = true;
+} else {
+    window.onYouTubeIframeAPIReady = function() {
+        ytAPIReady = true;
+    };
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -222,17 +226,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }).catch(err => console.log(err));
         }
 
-        // Sistema de reintento automático si la API de YouTube toma 1 segundo en cargar
-        function initYouTubeWithRetry(url, retries = 5) {
+        // Sistema de reintento automático robusto para la API de YouTube
+        function initYouTubeWithRetry(url, retries = 10) {
             if (!ytAPIReady && retries > 0) {
-                setTimeout(() => initYouTubeWithRetry(url, retries - 1), 300);
+                setTimeout(() => initYouTubeWithRetry(url, retries - 1), 400);
                 return;
             }
             if (!ytAPIReady) {
-                alert("No se pudo conectar con la API de YouTube. Revisa tu conexión a internet.");
+                forceInjectYouTubeAPI(url);
                 return;
             }
             loadYouTubeTrack(url);
+        }
+
+        function forceInjectYouTubeAPI(url) {
+            if (!document.getElementById('yt-script-inject')) {
+                const tag = document.createElement('script');
+                tag.id = 'yt-script-inject';
+                tag.src = "https://www.youtube.com/iframe_api";
+                document.head.appendChild(tag);
+            }
+            setTimeout(() => {
+                ytAPIReady = true;
+                loadYouTubeTrack(url);
+            }, 1000);
         }
 
         function loadYouTubeTrack(url) {
