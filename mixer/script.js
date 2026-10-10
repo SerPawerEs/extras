@@ -1,6 +1,5 @@
 let ytAPIReady = false;
 
-// Asegurar que la API se detecte correctamente incluso si ya cargó
 if (window.YT && window.YT.Player) {
     ytAPIReady = true;
 } else {
@@ -10,7 +9,6 @@ if (window.YT && window.YT.Player) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Referencias Modal Ayuda
     const helpBtn = document.getElementById('helpBtn');
     const helpModal = document.getElementById('helpModal');
     const closeModal = document.getElementById('closeModal');
@@ -23,8 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const masterPlayPauseBtn = document.getElementById('masterPlayPauseBtn');
     const masterIcon = document.getElementById('masterIcon');
+    const crossfadeToggle = document.getElementById('crossfadeToggle');
+    const transitionCenterBtn = document.getElementById('transitionCenterBtn');
 
     let localLibrary = [];
+    let deckLeftInstance = null;
+    let deckRightInstance = null;
 
     async function loadSongsJSON() {
         try {
@@ -39,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadSongsJSON();
 
-    // Setup Deck unificado (Audio Local o YouTube API)
     const setupDeck = (side) => {
         const audio = document.getElementById(`audio${side}`);
         const ytContainerId = `ytPlayer${side}`;
@@ -57,17 +58,49 @@ document.addEventListener('DOMContentLoaded', () => {
         const trackTitle = document.getElementById(`trackTitle${side}`);
         const trackArtist = document.getElementById(`trackArtist${side}`);
         const vinyl = document.getElementById(`vinyl${side}`);
+        
+        const back10Btn = document.getElementById(`back10${side}Btn`);
+        const fwd10Btn = document.getElementById(`fwd10${side}Btn`);
+        const prevBtn = document.getElementById(`prev${side}Btn`);
+        const nextBtn = document.getElementById(`next${side}Btn`);
 
         let isDraggingSeek = false;
         let mode = 'none'; // 'local' o 'youtube'
         let ytPlayer = null;
         let progressInterval = null;
+        let crossfadeTriggered = false;
+        
+        let currentSongFilename = null;
+        let currentYoutubeUrl = null;
 
         const clearProgressInterval = () => {
             if (progressInterval) clearInterval(progressInterval);
         };
 
-        // Play / Pausa unificado
+        const updateVolumeUI = (value) => {
+            volInput.value = value;
+            volVal.textContent = `${Math.round(value * 100)}%`;
+        };
+
+        // Asignación de volumen unificada (Local y YouTube)
+        const setVolumeLevel = (value) => {
+            updateVolumeUI(value);
+            if (mode === 'local') {
+                audio.volume = value;
+            } else if (mode === 'youtube' && ytPlayer && typeof ytPlayer.setVolume === 'function') {
+                ytPlayer.setVolume(value * 100);
+            }
+        };
+
+        const isPlaying = () => {
+            if (mode === 'local') {
+                return !audio.paused && !!audio.src;
+            } else if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+                return ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+            }
+            return false;
+        };
+
         const togglePlay = () => {
             if (mode === 'local') {
                 if (!audio.src) return;
@@ -93,22 +126,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             updateMasterState();
+            updateCenterButtonState();
         };
 
         playBtn.addEventListener('click', togglePlay);
 
-        // Control de Volumen
         volInput.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            volVal.textContent = `${Math.round(val * 100)}%`;
-            if (mode === 'local') {
-                audio.volume = val;
-            } else if (mode === 'youtube' && ytPlayer && typeof ytPlayer.setVolume === 'function') {
-                ytPlayer.setVolume(val * 100);
-            }
+            setVolumeLevel(parseFloat(e.target.value));
         });
 
-        // Control de Velocidad
         speedSelect.addEventListener('change', (e) => {
             const rate = parseFloat(e.target.value);
             if (mode === 'local') {
@@ -118,25 +144,42 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Listeners para Audio Local
+        const checkCrossfade = (currentTime, duration) => {
+            const isCrossfadeActive = crossfadeToggle ? crossfadeToggle.checked : true;
+            if (!isCrossfadeActive) return;
+
+            if (!duration || duration <= 5) return;
+            const timeLeft = duration - currentTime;
+
+            if (timeLeft <= 5 && !crossfadeTriggered) {
+                crossfadeTriggered = true;
+                triggerCrossfadeTransition(side);
+            } else if (timeLeft > 5) {
+                crossfadeTriggered = false;
+            }
+        };
+
         audio.addEventListener('timeupdate', () => {
             if (mode === 'local' && !isDraggingSeek && audio.duration) {
                 seekInput.value = (audio.currentTime / audio.duration) * 100;
                 currentTimeEl.textContent = formatTime(audio.currentTime);
+                checkCrossfade(audio.currentTime, audio.duration);
             }
         });
+
         audio.addEventListener('loadedmetadata', () => {
             if (mode === 'local') durationEl.textContent = formatTime(audio.duration);
         });
+
         audio.addEventListener('ended', () => {
             if (mode === 'local') {
                 playIcon.classList.replace('fa-pause', 'fa-play');
                 vinyl.classList.remove('spinning');
                 updateMasterState();
+                updateCenterButtonState();
             }
         });
 
-        // Barra de progreso interactiva (Seek)
         seekInput.addEventListener('mousedown', () => isDraggingSeek = true);
         seekInput.addEventListener('touchstart', () => isDraggingSeek = true);
 
@@ -160,7 +203,67 @@ document.addEventListener('DOMContentLoaded', () => {
             isDraggingSeek = false;
         });
 
-        // Buscador y Detección
+        back10Btn.addEventListener('click', () => jumpTime(-10));
+        fwd10Btn.addEventListener('click', () => jumpTime(10));
+
+        function jumpTime(seconds) {
+            if (mode === 'local' && audio.src) {
+                audio.currentTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + seconds));
+            } else if (mode === 'youtube' && ytPlayer && ytPlayer.getCurrentTime && ytPlayer.seekTo) {
+                const cur = ytPlayer.getCurrentTime();
+                const dur = ytPlayer.getDuration() || 0;
+                ytPlayer.seekTo(Math.max(0, Math.min(dur, cur + seconds)), true);
+            }
+        }
+
+        prevBtn.addEventListener('click', () => {
+            const currentTime = getCurrentTime();
+            if (currentTime > 3) {
+                if (mode === 'local') audio.currentTime = 0;
+                else if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(0, true);
+            } else {
+                changeSongByOffset(-1);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            const duration = getDuration();
+            if (duration > 3) {
+                if (mode === 'local') audio.currentTime = duration - 3.5;
+                else if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(duration - 3.5, true);
+            }
+        });
+
+        function changeSongByOffset(offset) {
+            if (localLibrary.length === 0 || !currentSongFilename) return;
+            let currentIndex = localLibrary.indexOf(currentSongFilename);
+            if (currentIndex === -1) currentIndex = 0;
+            
+            let newIndex = (currentIndex + offset + localLibrary.length) % localLibrary.length;
+            let filename = localLibrary[newIndex];
+            loadLocalTrack(filename, filename.replace(/\.[^/.]+$/, ""), true);
+        }
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const query = searchInput.value.trim();
+                if (query.includes('youtube.com') || query.includes('youtu.be') || query.includes('music.youtube.com')) {
+                    searchResults.classList.remove('active');
+                    initYouTubeWithRetry(query, false, 0);
+                    return;
+                }
+
+                const filtered = localLibrary.filter(song => song.toLowerCase().includes(query.toLowerCase()));
+                if (filtered.length > 0) {
+                    const filename = filtered[0];
+                    const cleanName = filename.replace(/\.[^/.]+$/, "");
+                    loadLocalTrack(filename, cleanName, false);
+                    searchResults.classList.remove('active');
+                    searchInput.value = cleanName;
+                }
+            }
+        });
+
         searchInput.addEventListener('input', (e) => {
             const query = e.target.value.trim();
             if (query === "") {
@@ -169,18 +272,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Detectar Link de YouTube
             if (query.includes('youtube.com') || query.includes('youtu.be') || query.includes('music.youtube.com')) {
                 searchResults.classList.remove('active');
-                initYouTubeWithRetry(query);
+                initYouTubeWithRetry(query, false, 0);
                 return;
             }
 
-            // Filtrar canciones de songs.json
             const filtered = localLibrary.filter(song => song.toLowerCase().includes(query.toLowerCase()));
             searchResults.innerHTML = '';
             if (filtered.length > 0) {
-                filtered.forEach(filename => {
+                filtered.forEach((filename) => {
                     const cleanName = filename.replace(/\.[^/.]+$/, "");
                     const item = document.createElement('div');
                     item.className = 'search-item';
@@ -192,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `;
                     item.addEventListener('click', () => {
-                        loadLocalTrack(filename, cleanName);
+                        loadLocalTrack(filename, cleanName, false);
                         searchResults.classList.remove('active');
                         searchInput.value = cleanName;
                     });
@@ -205,9 +306,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        function loadLocalTrack(filename, cleanName) {
+        function loadLocalTrack(filename, cleanName, autoPlay = false, startTime = 0) {
             clearProgressInterval();
             mode = 'local';
+            currentSongFilename = filename;
+            currentYoutubeUrl = null;
             ytContainerEl.classList.remove('active');
             if (ytPlayer && typeof ytPlayer.destroy === 'function') {
                 ytPlayer.destroy();
@@ -219,27 +322,76 @@ document.addEventListener('DOMContentLoaded', () => {
             trackTitle.textContent = cleanName;
             trackArtist.textContent = "Reproductor Local";
 
-            audio.play().then(() => {
-                playIcon.classList.replace('fa-play', 'fa-pause');
-                vinyl.classList.add('spinning');
+            audio.onloadedmetadata = () => {
+                if (startTime > 0) audio.currentTime = startTime;
+            };
+
+            if (autoPlay) {
+                audio.play().then(() => {
+                    playIcon.classList.replace('fa-play', 'fa-pause');
+                    vinyl.classList.add('spinning');
+                    updateMasterState();
+                    updateCenterButtonState();
+                }).catch(err => console.log(err));
+            } else {
+                audio.pause();
+                playIcon.classList.replace('fa-pause', 'fa-play');
+                vinyl.classList.remove('spinning');
                 updateMasterState();
-            }).catch(err => console.log(err));
+                updateCenterButtonState();
+            }
         }
 
-        // Sistema de reintento automático robusto para la API de YouTube
-        function initYouTubeWithRetry(url, retries = 10) {
+        // Método universal para reproducir Local o YouTube manteniendo el tiempo exacto
+        function ensureTrackPlayback(songFilename, youtubeUrl, startTime = 0) {
+            if (youtubeUrl) {
+                initYouTubeWithRetry(youtubeUrl, true, startTime);
+            } else if (songFilename) {
+                if (currentSongFilename === songFilename && mode === 'local') {
+                    if (audio.paused) {
+                        audio.play().then(() => {
+                            playIcon.classList.replace('fa-play', 'fa-pause');
+                            vinyl.classList.add('spinning');
+                            updateMasterState();
+                            updateCenterButtonState();
+                        }).catch(err => console.log(err));
+                    }
+                } else {
+                    const cleanName = songFilename.replace(/\.[^/.]+$/, "");
+                    loadLocalTrack(songFilename, cleanName, true, startTime);
+                }
+            }
+        }
+
+        function jumpMinusOneSecond() {
+            jumpTime(-1);
+        }
+
+        function getCurrentTime() {
+            if (mode === 'local') return audio.currentTime;
+            if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') return ytPlayer.getCurrentTime();
+            return 0;
+        }
+
+        function getDuration() {
+            if (mode === 'local') return audio.duration || 0;
+            if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getDuration === 'function') return ytPlayer.getDuration() || 0;
+            return 0;
+        }
+
+        function initYouTubeWithRetry(url, autoPlay = false, startTime = 0, retries = 10) {
             if (!ytAPIReady && retries > 0) {
-                setTimeout(() => initYouTubeWithRetry(url, retries - 1), 400);
+                setTimeout(() => initYouTubeWithRetry(url, autoPlay, startTime, retries - 1), 400);
                 return;
             }
             if (!ytAPIReady) {
-                forceInjectYouTubeAPI(url);
+                forceInjectYouTubeAPI(url, autoPlay, startTime);
                 return;
             }
-            loadYouTubeTrack(url);
+            loadYouTubeTrack(url, autoPlay, startTime);
         }
 
-        function forceInjectYouTubeAPI(url) {
+        function forceInjectYouTubeAPI(url, autoPlay, startTime) {
             if (!document.getElementById('yt-script-inject')) {
                 const tag = document.createElement('script');
                 tag.id = 'yt-script-inject';
@@ -248,11 +400,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             setTimeout(() => {
                 ytAPIReady = true;
-                loadYouTubeTrack(url);
+                loadYouTubeTrack(url, autoPlay, startTime);
             }, 1000);
         }
 
-        function loadYouTubeTrack(url) {
+        function loadYouTubeTrack(url, autoPlay = false, startTime = 0) {
             let videoId = "";
             if (url.includes('v=')) {
                 videoId = url.split('v=')[1]?.split('&')[0];
@@ -269,6 +421,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             clearProgressInterval();
             mode = 'youtube';
+            currentSongFilename = null;
+            currentYoutubeUrl = url;
             audio.pause();
             audio.src = "";
 
@@ -277,20 +431,28 @@ document.addEventListener('DOMContentLoaded', () => {
             trackArtist.textContent = `ID: ${videoId}`;
 
             if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
-                ytPlayer.loadVideoById(videoId);
+                ytPlayer.loadVideoById({ 'videoId': videoId, 'startSeconds': startTime });
+                if (!autoPlay) ytPlayer.pauseVideo();
             } else {
                 ytPlayer = new YT.Player(ytContainerId, {
                     height: '90',
                     width: '100%',
                     videoId: videoId,
-                    playerVars: { 'autoplay': 1, 'controls': 1, 'modestbranding': 1 },
+                    playerVars: { 'autoplay': autoPlay ? 1 : 0, 'controls': 1, 'start': startTime, 'modestbranding': 1 },
                     events: {
                         'onReady': (event) => {
-                            event.target.playVideo();
+                            if (autoPlay) {
+                                event.target.playVideo();
+                                playIcon.classList.replace('fa-play', 'fa-pause');
+                                vinyl.classList.add('spinning');
+                            } else {
+                                event.target.pauseVideo();
+                                playIcon.classList.replace('fa-pause', 'fa-play');
+                                vinyl.classList.remove('spinning');
+                            }
                             event.target.setVolume(volInput.value * 100);
-                            playIcon.classList.replace('fa-play', 'fa-pause');
-                            vinyl.classList.add('spinning');
                             updateMasterState();
+                            updateCenterButtonState();
                         },
                         'onStateChange': (event) => {
                             if (event.data === YT.PlayerState.PLAYING) {
@@ -301,12 +463,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 vinyl.classList.remove('spinning');
                             }
                             updateMasterState();
+                            updateCenterButtonState();
                         }
                     }
                 });
             }
 
-            // Sincronizar barra de progreso para YouTube
             progressInterval = setInterval(() => {
                 if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
                     const current = ytPlayer.getCurrentTime() || 0;
@@ -316,6 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!isDraggingSeek) {
                         seekInput.value = (current / duration) * 100;
                     }
+                    checkCrossfade(current, duration);
                 }
             }, 500);
         }
@@ -327,9 +490,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         return {
-            get mode() { return mode; },
-            get audio() { return audio; },
-            get ytPlayer() { return ytPlayer; },
+            getMode: () => mode,
+            getAudio: () => audio,
+            getYtPlayer: () => ytPlayer,
+            getCurrentSongFilename: () => currentSongFilename,
+            getCurrentYoutubeUrl: () => currentYoutubeUrl,
+            isPlaying,
+            getCurrentTime,
+            ensureTrackPlayback,
+            setVolumeLevel,
+            jumpTime,
+            jumpMinusOneSecond,
+            updateVolumeUI,
+            loadLocalTrack,
+            initYouTubeWithRetry,
             playBtn,
             playIcon,
             vinyl,
@@ -337,37 +511,111 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
 
-    const deckLeft = setupDeck('Left');
-    const deckRight = setupDeck('Right');
+    deckLeftInstance = setupDeck('Left');
+    deckRightInstance = setupDeck('Right');
 
-    // Master Control Central
+    function updateCenterButtonState() {
+        const leftPlay = deckLeftInstance.isPlaying();
+        const rightPlay = deckRightInstance.isPlaying();
+
+        if ((leftPlay && !rightPlay) || (!leftPlay && rightPlay)) {
+            transitionCenterBtn.disabled = false;
+        } else {
+            transitionCenterBtn.disabled = true;
+        }
+    }
+
+    function executeManualTransition() {
+        if (transitionCenterBtn.disabled) return;
+
+        const leftPlay = deckLeftInstance.isPlaying();
+        const activeSide = leftPlay ? 'Left' : 'Right';
+        triggerCrossfadeTransition(activeSide);
+    }
+
+    transitionCenterBtn.addEventListener('click', executeManualTransition);
+
+    function triggerCrossfadeTransition(activeSide) {
+        const outgoingDeck = activeSide === 'Left' ? deckLeftInstance : deckRightInstance;
+        const incomingDeck = activeSide === 'Left' ? deckRightInstance : deckLeftInstance;
+
+        let targetSong = incomingDeck.getCurrentSongFilename();
+        let targetYtUrl = incomingDeck.getCurrentYoutubeUrl();
+
+        if (!targetSong && !targetYtUrl) {
+            targetSong = outgoingDeck.getCurrentSongFilename();
+            targetYtUrl = outgoingDeck.getCurrentYoutubeUrl();
+        }
+
+        if (!targetSong && !targetYtUrl && localLibrary.length > 0) {
+            targetSong = localLibrary[0];
+        }
+
+        const currentTime = outgoingDeck.getCurrentTime();
+
+        // Inicia la reproducción en el deck entrante desde el tiempo exacto
+        incomingDeck.ensureTrackPlayback(targetSong, targetYtUrl, currentTime);
+
+        let steps = 50;
+        let stepTime = 5000 / steps;
+        let currentStep = 0;
+
+        let outVolStart = outgoingDeck.getMode() === 'local' ? outgoingDeck.getAudio().volume : (outgoingDeck.getYtPlayer() && outgoingDeck.getYtPlayer().getVolume ? outgoingDeck.getYtPlayer().getVolume() / 100 : 1);
+        let inVolTarget = 1;
+
+        incomingDeck.setVolumeLevel(0);
+
+        let fadeInterval = setInterval(() => {
+            currentStep++;
+            let progress = currentStep / steps;
+
+            let newOutVol = Math.max(0, outVolStart * (1 - progress));
+            outgoingDeck.setVolumeLevel(newOutVol);
+
+            let newInVol = Math.min(1, inVolTarget * progress);
+            incomingDeck.setVolumeLevel(newInVol);
+
+            if (currentStep >= steps) {
+                clearInterval(fadeInterval);
+                if (outgoingDeck.getMode() === 'local') {
+                    outgoingDeck.getAudio().pause();
+                } else if (outgoingDeck.getMode() === 'youtube') {
+                    const yt = outgoingDeck.getYtPlayer();
+                    if (yt && typeof yt.pauseVideo === 'function') yt.pauseVideo();
+                }
+                updateCenterButtonState();
+            }
+        }, stepTime);
+    }
+
     let preMasterStates = { left: false, right: false };
 
     masterPlayPauseBtn.addEventListener('click', toggleMasterPlayPause);
 
     function toggleMasterPlayPause() {
-        const leftPlaying = deckLeft.mode === 'local' ? !deckLeft.audio.paused : (deckLeft.ytPlayer && typeof deckLeft.ytPlayer.getPlayerState === 'function' && deckLeft.ytPlayer.getPlayerState() === YT.PlayerState.PLAYING);
-        const rightPlaying = deckRight.mode === 'local' ? !deckRight.audio.paused : (deckRight.ytPlayer && typeof deckRight.ytPlayer.getPlayerState === 'function' && deckRight.ytPlayer.getPlayerState() === YT.PlayerState.PLAYING);
+        const leftPlaying = deckLeftInstance.isPlaying();
+        const rightPlaying = deckRightInstance.isPlaying();
 
         if (leftPlaying || rightPlaying) {
             preMasterStates.left = leftPlaying;
             preMasterStates.right = rightPlaying;
-            if (leftPlaying) deckLeft.togglePlay();
-            if (rightPlaying) deckRight.togglePlay();
+            if (leftPlaying) deckLeftInstance.togglePlay();
+            if (rightPlaying) deckRightInstance.togglePlay();
         } else {
-            if (preMasterStates.left) deckLeft.togglePlay();
-            if (preMasterStates.right) deckRight.togglePlay();
+            if (preMasterStates.left) deckLeftInstance.togglePlay();
+            if (preMasterStates.right) deckRightInstance.togglePlay();
             if (!preMasterStates.left && !preMasterStates.right) {
-                if (deckLeft.mode !== 'none') deckLeft.togglePlay();
-                if (deckRight.mode !== 'none') deckRight.togglePlay();
+                if (deckLeftInstance.getMode() !== 'none') deckLeftInstance.togglePlay();
+                if (deckRightInstance.getMode() !== 'none') deckRightInstance.togglePlay();
             }
         }
         updateMasterState();
+        updateCenterButtonState();
     }
 
     function updateMasterState() {
-        const leftPlaying = deckLeft.mode === 'local' ? !deckLeft.audio.paused && deckLeft.audio.src : (deckLeft.ytPlayer && typeof deckLeft.ytPlayer.getPlayerState === 'function' && deckLeft.ytPlayer.getPlayerState() === YT.PlayerState.PLAYING);
-        const rightPlaying = deckRight.mode === 'local' ? !deckRight.audio.paused && deckRight.audio.src : (deckRight.ytPlayer && typeof deckRight.ytPlayer.getPlayerState === 'function' && deckRight.ytPlayer.getPlayerState() === YT.PlayerState.PLAYING);
+        const leftPlaying = deckLeftInstance.isPlaying();
+        const rightPlaying = deckRightInstance.isPlaying();
 
         if (leftPlaying || rightPlaying) {
             masterIcon.classList.replace('fa-play', 'fa-pause');
@@ -385,17 +633,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     }
 
-    // Atajos de Teclado
     document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT') return;
         const key = e.key.toUpperCase();
 
-        if (key === 'Q') deckLeft.togglePlay();
-        else if (key === 'P') deckRight.togglePlay();
+        if (key === 'Q') deckLeftInstance.togglePlay();
+        else if (key === 'P') deckRightInstance.togglePlay();
+        else if (key === 'G') executeManualTransition();
         else if (e.code === 'Space') {
             e.preventDefault();
             toggleMasterPlayPause();
         }
+        else if (key === 'Z') deckLeftInstance.jumpMinusOneSecond();
+        else if (key === 'M') deckRightInstance.jumpMinusOneSecond();
+        else if (key === 'A') deckLeftInstance.jumpTime(-10);
+        else if (key === 'F') deckLeftInstance.jumpTime(10);
+        else if (key === 'H') deckRightInstance.jumpTime(-10);
+        else if (e.key === "'") deckRightInstance.jumpTime(10);
         else if (key === 'W') {
             const volInput = document.getElementById('volLeft');
             volInput.value = Math.min(1, parseFloat(volInput.value) + 0.05);

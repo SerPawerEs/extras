@@ -4,39 +4,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dual Player Music Studio</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-    <!-- Botón de Ayuda (?) -->
-    <button class="help-btn" id="helpBtn" title="Atajos de Teclado"><i class="fa-solid fa-question"></i></button>
+    <div class="top-right-controls">
+        <div class="crossfade-switch-container" title="Activar / Desactivar Crossfade automático">
+            <span>Crossfade</span>
+            <label class="switch">
+                <input type="checkbox" id="crossfadeToggle" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <button class="help-btn" id="helpBtn" title="Atajos de Teclado"><i class="fa-solid fa-question"></i></button>
+    </div>
 
     <!-- Modal de Ayuda -->
     <div class="modal-overlay" id="helpModal">
         <div class="modal-content">
-            <h2><i class="fa-solid fa-keyboard"></i> Atajos de Teclado (1)</h2>
+            <h2><i class="fa-solid fa-keyboard"></i> Atajos de Teclado</h2>
             <div class="shortcuts-grid">
-                <div class="shortcut-item"><span>Reproductor Izquierdo (Play/Pausa)</span><kbd>Q</kbd></div>
-                <div class="shortcut-item"><span>Reproductor Derecho (Play/Pausa)</span><kbd>P</kbd></div>
-                <div class="shortcut-item"><span>Master Play/Pausa (Ambos)</span><kbd>Espacio</kbd></div>
+                <div class="shortcut-item"><span>Deck Izquierdo (Play/Pausa)</span><kbd>Q</kbd></div>
+                <div class="shortcut-item"><span>Deck Derecho (Play/Pausa)</span><kbd>P</kbd></div>
+                <div class="shortcut-item"><span>Master Play/Pausa</span><kbd>Espacio</kbd></div>
+                <div class="shortcut-item"><span>Transición Manual (Swap Deck)</span><kbd>G</kbd></div>
+                <div class="shortcut-item"><span>Retroceder -1s (Oculto Izq / Der)</span><kbd>Z</kbd> / <kbd>M</kbd></div>
+                <div class="shortcut-item"><span>Retroceder / Avanzar 10s (Izq)</span><kbd>A</kbd> / <kbd>F</kbd></div>
+                <div class="shortcut-item"><span>Retroceder / Avanzar 10s (Der)</span><kbd>H</kbd> / <kbd>'</kbd></div>
                 <div class="shortcut-item"><span>Volumen Izquierdo (+ / -)</span><kbd>W</kbd> / <kbd>S</kbd></div>
                 <div class="shortcut-item"><span>Volumen Derecho (+ / -)</span><kbd>O</kbd> / <kbd>L</kbd></div>
-                <div class="shortcut-item"><span>Velocidad Izquierda (+ / -)</span><kbd>E</kbd> / <kbd>D</kbd></div>
-                <div class="shortcut-item"><span>Velocidad Derecha (+ / -)</span><kbd>I</kbd> / <kbd>K</kbd></div>
             </div>
             <button class="close-modal-btn" id="closeModal">Entendido</button>
         </div>
     </div>
 
-    <!-- Controles Master Centrales -->
+    <!-- Controles Master Centrales y Botón de Transición Manual ("G") -->
     <div class="master-control-bar">
         <button class="master-btn" id="masterPlayPauseBtn" title="Master Play/Pausa (Espacio)">
             <i class="fa-solid fa-play" id="masterIcon"></i> Master Play / Pausa
         </button>
+        <button class="transition-center-btn" id="transitionCenterBtn" title="Transición Manual (G) - Cambiar de deck" disabled>
+            <i class="fa-solid fa-right-left"></i> Transición (G)
+        </button>
     </div>
 
-    <!-- Contenedor Principal Divisor -->
     <div class="main-container">
 
         <!-- LADO IZQUIERDO -->
@@ -65,7 +77,6 @@
                 </div>
             </div>
 
-            <!-- Contenedor multimedia unificado -->
             <div class="media-container">
                 <audio id="audioLeft" crossorigin="anonymous"></audio>
                 <div id="ytPlayerLeft" class="yt-embed-box"></div>
@@ -79,7 +90,13 @@
                 </div>
 
                 <div class="control-row">
-                    <button class="custom-btn" id="playLeftBtn" title="Play/Pausa (Q)"><i class="fa-solid fa-play" id="playIconLeft"></i></button>
+                    <div class="playback-btns">
+                        <button class="custom-btn secondary-btn" id="back10LeftBtn" title="Retroceder 10 segundos">-10s</button>
+                        <button class="custom-btn secondary-btn" id="prevLeftBtn" title="Anterior"><i class="fa-solid fa-backward-step"></i></button>
+                        <button class="custom-btn" id="playLeftBtn" title="Play/Pausa (Q)"><i class="fa-solid fa-play" id="playIconLeft"></i></button>
+                        <button class="custom-btn secondary-btn" id="nextLeftBtn" title="Ir al final de la canción"><i class="fa-solid fa-forward-step"></i></button>
+                        <button class="custom-btn secondary-btn" id="fwd10LeftBtn" title="Avanzar 10 segundos">+10s</button>
+                    </div>
                     
                     <div class="control-group">
                         <label><i class="fa-solid fa-volume-high"></i> Vol</label>
@@ -141,7 +158,13 @@
                 </div>
 
                 <div class="control-row">
-                    <button class="custom-btn" id="playRightBtn" title="Play/Pausa (P)"><i class="fa-solid fa-play" id="playIconRight"></i></button>
+                    <div class="playback-btns">
+                        <button class="custom-btn secondary-btn" id="back10RightBtn" title="Retroceder 10 segundos">-10s</button>
+                        <button class="custom-btn secondary-btn" id="prevRightBtn" title="Anterior"><i class="fa-solid fa-backward-step"></i></button>
+                        <button class="custom-btn" id="playRightBtn" title="Play/Pausa (P)"><i class="fa-solid fa-play" id="playIconRight"></i></button>
+                        <button class="custom-btn secondary-btn" id="nextRightBtn" title="Ir al final de la canción"><i class="fa-solid fa-forward-step"></i></button>
+                        <button class="custom-btn secondary-btn" id="fwd10RightBtn" title="Avanzar 10 segundos">+10s</button>
+                    </div>
                     
                     <div class="control-group">
                         <label><i class="fa-solid fa-volume-high"></i> Vol</label>
@@ -166,8 +189,7 @@
 
     </div>
 
-    <!-- API oficial de YouTube -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="scripts.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
