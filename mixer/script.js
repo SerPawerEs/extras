@@ -9,6 +9,7 @@ if (window.YT && window.YT.Player) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("v1.1")
     const helpBtn = document.getElementById('helpBtn');
     const helpModal = document.getElementById('helpModal');
     const closeModal = document.getElementById('closeModal');
@@ -248,9 +249,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 400);
         });
 
-        function ensureTrackPlayback(youtubeUrl, startTime = 0) {
-            if (youtubeUrl) {
-                initYouTubeWithRetry(youtubeUrl, true, startTime);
+        function ensureTrackPlayback(youtubeUrl) {
+            if (!youtubeUrl) return;
+
+            // Si es la misma URL que ya estaba en este deck, solo reanudamos
+            if (currentYoutubeUrl === youtubeUrl && ytPlayer && typeof ytPlayer.playVideo === 'function') {
+                ytPlayer.playVideo();
+                playIcon.classList.replace('fa-play', 'fa-pause');
+                vinyl.classList.add('spinning');
+                updateMasterState();
+                updateCenterButtonState();
+            } else {
+                // Si es una canción nueva, arranca limpiamente desde el segundo 0
+                initYouTubeWithRetry(youtubeUrl, true, 0);
             }
         }
 
@@ -427,10 +438,9 @@ document.addEventListener('DOMContentLoaded', () => {
             targetYtUrl = outgoingDeck.getCurrentYoutubeUrl();
         }
 
-        const currentTime = outgoingDeck.getCurrentTime();
-
         if (targetYtUrl) {
-            incomingDeck.ensureTrackPlayback(targetYtUrl, currentTime);
+            // El deck entrante reproduce su propia canción desde su lugar actual (o desde 0)
+            incomingDeck.ensureTrackPlayback(targetYtUrl);
         }
 
         let steps = 50;
