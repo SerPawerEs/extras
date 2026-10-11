@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const crossfadeToggle = document.getElementById('crossfadeToggle');
     const transitionCenterBtn = document.getElementById('transitionCenterBtn');
 
-    let localLibrary = [];
     let deckLeftInstance = null;
     let deckRightInstance = null;
 
@@ -34,21 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'https://pipedapi.mha.fi'
     ];
 
-    async function loadSongsJSON() {
-        try {
-            const response = await fetch('songs.json');
-            if (response.ok) {
-                localLibrary = await response.json();
-            }
-        } catch (error) {
-            console.error('Error cargando songs.json:', error);
-        }
-    }
-
-    loadSongsJSON();
-
     const setupDeck = (side) => {
-        const audio = document.getElementById(`audio${side}`);
         const ytContainerId = `ytPlayer${side}`;
         const ytContainerEl = document.getElementById(ytContainerId);
         const playBtn = document.getElementById(`play${side}Btn`);
@@ -75,8 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let ytPlayer = null;
         let progressInterval = null;
         let crossfadeTriggered = false;
-        
-        let currentSongFilename = null;
         let currentYoutubeUrl = null;
 
         const clearProgressInterval = () => {
@@ -90,35 +73,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const setVolumeLevel = (value) => {
             updateVolumeUI(value);
-            if (mode === 'local') {
-                audio.volume = value;
-            } else if (mode === 'youtube' && ytPlayer && typeof ytPlayer.setVolume === 'function') {
+            if (ytPlayer && typeof ytPlayer.setVolume === 'function') {
                 ytPlayer.setVolume(value * 100);
             }
         };
 
         const isPlaying = () => {
-            if (mode === 'local') {
-                return !audio.paused && !!audio.src;
-            } else if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+            if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
                 return ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
             }
             return false;
         };
 
         const togglePlay = () => {
-            if (mode === 'local') {
-                if (!audio.src) return;
-                if (audio.paused) {
-                    audio.play();
-                    playIcon.classList.replace('fa-play', 'fa-pause');
-                    vinyl.classList.add('spinning');
-                } else {
-                    audio.pause();
-                    playIcon.classList.replace('fa-pause', 'fa-play');
-                    vinyl.classList.remove('spinning');
-                }
-            } else if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+            if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
                 const state = ytPlayer.getPlayerState();
                 if (state === YT.PlayerState.PLAYING) {
                     ytPlayer.pauseVideo();
@@ -142,9 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         speedSelect.addEventListener('change', (e) => {
             const rate = parseFloat(e.target.value);
-            if (mode === 'local') {
-                audio.playbackRate = rate;
-            } else if (mode === 'youtube' && ytPlayer && typeof ytPlayer.setPlaybackRate === 'function') {
+            if (ytPlayer && typeof ytPlayer.setPlaybackRate === 'function') {
                 ytPlayer.setPlaybackRate(rate);
             }
         });
@@ -164,44 +130,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        audio.addEventListener('timeupdate', () => {
-            if (mode === 'local' && !isDraggingSeek && audio.duration) {
-                seekInput.value = (audio.currentTime / audio.duration) * 100;
-                currentTimeEl.textContent = formatTime(audio.currentTime);
-                checkCrossfade(audio.currentTime, audio.duration);
-            }
-        });
-
-        audio.addEventListener('loadedmetadata', () => {
-            if (mode === 'local') durationEl.textContent = formatTime(audio.duration);
-        });
-
-        audio.addEventListener('ended', () => {
-            if (mode === 'local') {
-                playIcon.classList.replace('fa-pause', 'fa-play');
-                vinyl.classList.remove('spinning');
-                updateMasterState();
-                updateCenterButtonState();
-            }
-        });
-
         seekInput.addEventListener('mousedown', () => isDraggingSeek = true);
         seekInput.addEventListener('touchstart', () => isDraggingSeek = true);
 
         seekInput.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
-            if (mode === 'local' && audio.duration) {
-                currentTimeEl.textContent = formatTime((val / 100) * audio.duration);
-            } else if (mode === 'youtube' && ytPlayer && ytPlayer.getDuration) {
+            if (ytPlayer && ytPlayer.getDuration) {
                 currentTimeEl.textContent = formatTime((val / 100) * ytPlayer.getDuration());
             }
         });
 
         seekInput.addEventListener('change', (e) => {
             const val = parseFloat(e.target.value);
-            if (mode === 'local' && audio.duration) {
-                audio.currentTime = (val / 100) * audio.duration;
-            } else if (mode === 'youtube' && ytPlayer && ytPlayer.seekTo) {
+            if (ytPlayer && ytPlayer.seekTo) {
                 const targetTime = (val / 100) * ytPlayer.getDuration();
                 ytPlayer.seekTo(targetTime, true);
             }
@@ -212,9 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fwd10Btn.addEventListener('click', () => jumpTime(10));
 
         function jumpTime(seconds) {
-            if (mode === 'local' && audio.src) {
-                audio.currentTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + seconds));
-            } else if (mode === 'youtube' && ytPlayer && ytPlayer.getCurrentTime && ytPlayer.seekTo) {
+            if (ytPlayer && ytPlayer.getCurrentTime && ytPlayer.seekTo) {
                 const cur = ytPlayer.getCurrentTime();
                 const dur = ytPlayer.getDuration() || 0;
                 ytPlayer.seekTo(Math.max(0, Math.min(dur, cur + seconds)), true);
@@ -224,48 +163,30 @@ document.addEventListener('DOMContentLoaded', () => {
         prevBtn.addEventListener('click', () => {
             const currentTime = getCurrentTime();
             if (currentTime > 3) {
-                if (mode === 'local') audio.currentTime = 0;
-                else if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(0, true);
-            } else {
-                changeSongByOffset(-1);
+                if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(0, true);
             }
         });
 
         nextBtn.addEventListener('click', () => {
             const duration = getDuration();
             if (duration > 3) {
-                if (mode === 'local') audio.currentTime = duration - 3.5;
-                else if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(duration - 3.5, true);
+                if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(duration - 3.5, true);
             }
         });
 
-        function changeSongByOffset(offset) {
-            if (localLibrary.length === 0 || !currentSongFilename) return;
-            let currentIndex = localLibrary.indexOf(currentSongFilename);
-            if (currentIndex === -1) currentIndex = 0;
-            
-            let newIndex = (currentIndex + offset + localLibrary.length) % localLibrary.length;
-            let filename = localLibrary[newIndex];
-            loadLocalTrack(filename, filename.replace(/\.[^/.]+$/, ""), true);
-        }
-
-        // --- BUSCADOR HÍBRIDO (Local + YouTube mediante Piped API) ---
+        // --- BUSCADOR EXCLUSIVO DE YOUTUBE (Vía Piped API) ---
         let searchTimeout = null;
 
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const query = searchInput.value.trim();
                 searchResults.classList.remove('active');
-                if (query.includes('youtube.com') || query.includes('youtu.be') || query.includes('music.youtube.com')) {
-                    initYouTubeWithRetry(query, false, 0);
-                    return;
-                }
-                const filtered = localLibrary.filter(song => song.toLowerCase().includes(query.toLowerCase()));
-                if (filtered.length > 0) {
-                    const filename = filtered[0];
-                    const cleanName = filename.replace(/\.[^/.]+$/, "");
-                    loadLocalTrack(filename, cleanName, false);
-                    searchInput.value = cleanName;
+                if (query) {
+                    let videoUrl = query;
+                    if (!query.includes('youtube.com') && !query.includes('youtu.be')) {
+                        videoUrl = `https://www.youtube.com/watch?v=${query}`;
+                    }
+                    initYouTubeWithRetry(videoUrl, false, 0);
                 }
             }
         });
@@ -284,35 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Mostrar resultados locales primero
-            const localFiltered = localLibrary.filter(song => song.toLowerCase().includes(query.toLowerCase()));
-            
-            searchResults.innerHTML = '';
-            let hasResults = false;
-
-            localFiltered.forEach((filename) => {
-                hasResults = true;
-                const cleanName = filename.replace(/\.[^/.]+$/, "");
-                const item = document.createElement('div');
-                item.className = 'search-item';
-                item.innerHTML = `
-                    <i class="fa-solid fa-music"></i>
-                    <div class="search-item-info">
-                        <h4>${cleanName}</h4>
-                        <p>Local: songs/${filename}</p>
-                    </div>
-                `;
-                item.addEventListener('click', () => {
-                    loadLocalTrack(filename, cleanName, false);
-                    searchResults.classList.remove('active');
-                    searchInput.value = cleanName;
-                });
-                searchResults.appendChild(item);
-            });
-
-            if (hasResults) searchResults.classList.add('active');
-
-            // Búsqueda en YouTube con debounce vía Piped API
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(async () => {
                 let ytData = null;
@@ -328,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                searchResults.innerHTML = '';
                 if (ytData && ytData.items && ytData.items.length > 0) {
                     ytData.items.slice(0, 5).forEach(item => {
                         const videoId = item.url ? item.url.split('v=')[1] : null;
@@ -355,59 +248,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 400);
         });
 
-        function loadLocalTrack(filename, cleanName, autoPlay = false, startTime = 0) {
-            clearProgressInterval();
-            mode = 'local';
-            currentSongFilename = filename;
-            currentYoutubeUrl = null;
-            ytContainerEl.classList.remove('active');
-            if (ytPlayer && typeof ytPlayer.destroy === 'function') {
-                ytPlayer.destroy();
-                ytPlayer = null;
-            }
-
-            audio.src = `songs/${filename}`;
-            audio.load();
-            trackTitle.textContent = cleanName;
-            trackArtist.textContent = "Reproductor Local";
-
-            audio.onloadedmetadata = () => {
-                if (startTime > 0) audio.currentTime = startTime;
-            };
-
-            if (autoPlay) {
-                audio.play().then(() => {
-                    playIcon.classList.replace('fa-play', 'fa-pause');
-                    vinyl.classList.add('spinning');
-                    updateMasterState();
-                    updateCenterButtonState();
-                }).catch(err => console.log(err));
-            } else {
-                audio.pause();
-                playIcon.classList.replace('fa-pause', 'fa-play');
-                vinyl.classList.remove('spinning');
-                updateMasterState();
-                updateCenterButtonState();
-            }
-        }
-
-        function ensureTrackPlayback(songFilename, youtubeUrl, startTime = 0) {
+        function ensureTrackPlayback(youtubeUrl, startTime = 0) {
             if (youtubeUrl) {
                 initYouTubeWithRetry(youtubeUrl, true, startTime);
-            } else if (songFilename) {
-                if (currentSongFilename === songFilename && mode === 'local') {
-                    if (audio.paused) {
-                        audio.play().then(() => {
-                            playIcon.classList.replace('fa-play', 'fa-pause');
-                            vinyl.classList.add('spinning');
-                            updateMasterState();
-                            updateCenterButtonState();
-                        }).catch(err => console.log(err));
-                    }
-                } else {
-                    const cleanName = songFilename.replace(/\.[^/.]+$/, "");
-                    loadLocalTrack(songFilename, cleanName, true, startTime);
-                }
             }
         }
 
@@ -416,13 +259,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function getCurrentTime() {
-            if (mode === 'local') return audio.currentTime;
             if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') return ytPlayer.getCurrentTime();
             return 0;
         }
 
         function getDuration() {
-            if (mode === 'local') return audio.duration || 0;
             if (mode === 'youtube' && ytPlayer && typeof ytPlayer.getDuration === 'function') return ytPlayer.getDuration() || 0;
             return 0;
         }
@@ -469,10 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             clearProgressInterval();
             mode = 'youtube';
-            currentSongFilename = null;
             currentYoutubeUrl = url;
-            audio.pause();
-            audio.src = "";
 
             ytContainerEl.classList.add('active');
             trackTitle.textContent = "Audio de YouTube";
@@ -539,9 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return {
             getMode: () => mode,
-            getAudio: () => audio,
             getYtPlayer: () => ytPlayer,
-            getCurrentSongFilename: () => currentSongFilename,
             getCurrentYoutubeUrl: () => currentYoutubeUrl,
             isPlaying,
             getCurrentTime,
@@ -550,7 +386,6 @@ document.addEventListener('DOMContentLoaded', () => {
             jumpTime,
             jumpMinusOneSecond,
             updateVolumeUI,
-            loadLocalTrack,
             initYouTubeWithRetry,
             playBtn,
             playIcon,
@@ -587,27 +422,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const outgoingDeck = activeSide === 'Left' ? deckLeftInstance : deckRightInstance;
         const incomingDeck = activeSide === 'Left' ? deckRightInstance : deckLeftInstance;
 
-        let targetSong = incomingDeck.getCurrentSongFilename();
         let targetYtUrl = incomingDeck.getCurrentYoutubeUrl();
-
-        if (!targetSong && !targetYtUrl) {
-            targetSong = outgoingDeck.getCurrentSongFilename();
+        if (!targetYtUrl) {
             targetYtUrl = outgoingDeck.getCurrentYoutubeUrl();
-        }
-
-        if (!targetSong && !targetYtUrl && localLibrary.length > 0) {
-            targetSong = localLibrary[0];
         }
 
         const currentTime = outgoingDeck.getCurrentTime();
 
-        incomingDeck.ensureTrackPlayback(targetSong, targetYtUrl, currentTime);
+        if (targetYtUrl) {
+            incomingDeck.ensureTrackPlayback(targetYtUrl, currentTime);
+        }
 
         let steps = 50;
         let stepTime = 5000 / steps;
         let currentStep = 0;
 
-        let outVolStart = outgoingDeck.getMode() === 'local' ? outgoingDeck.getAudio().volume : (outgoingDeck.getYtPlayer() && outgoingDeck.getYtPlayer().getVolume ? outgoingDeck.getYtPlayer().getVolume() / 100 : 1);
+        let outVolStart = (outgoingDeck.getYtPlayer() && outgoingDeck.getYtPlayer().getVolume ? outgoingDeck.getYtPlayer().getVolume() / 100 : 1);
         let inVolTarget = 1;
 
         incomingDeck.setVolumeLevel(0);
@@ -624,12 +454,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (currentStep >= steps) {
                 clearInterval(fadeInterval);
-                if (outgoingDeck.getMode() === 'local') {
-                    outgoingDeck.getAudio().pause();
-                } else if (outgoingDeck.getMode() === 'youtube') {
-                    const yt = outgoingDeck.getYtPlayer();
-                    if (yt && typeof yt.pauseVideo === 'function') yt.pauseVideo();
-                }
+                const yt = outgoingDeck.getYtPlayer();
+                if (yt && typeof yt.pauseVideo === 'function') yt.pauseVideo();
                 updateCenterButtonState();
             }
         }, stepTime);
@@ -652,8 +478,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (preMasterStates.left) deckLeftInstance.togglePlay();
             if (preMasterStates.right) deckRightInstance.togglePlay();
             if (!preMasterStates.left && !preMasterStates.right) {
-                if (deckLeftInstance.getMode() !== 'none') deckLeftInstance.togglePlay();
-                if (deckRightInstance.getMode() !== 'none') deckRightInstance.togglePlay();
+                if (deckLeftInstance.getCurrentYoutubeUrl()) deckLeftInstance.togglePlay();
+                if (deckRightInstance.getCurrentYoutubeUrl()) deckRightInstance.togglePlay();
             }
         }
         updateMasterState();
