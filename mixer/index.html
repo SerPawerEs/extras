@@ -10,14 +10,54 @@
 <body>
 
     <div class="top-right-controls">
-        <div class="crossfade-switch-container" title="Activar / Desactivar Crossfade automático">
-            <span>Crossfade</span>
-            <label class="switch">
-                <input type="checkbox" id="crossfadeToggle" checked>
-                <span class="slider round"></span>
-            </label>
+        <button class="settings-btn" id="settingsBtn" title="Ajustes"><i class="fa-solid fa-gear"></i></button>
+    </div>
+
+    <!-- Modal de Ajustes -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content settings-modal-content">
+            <div class="settings-header">
+                <h2><i class="fa-solid fa-gear"></i> Ajustes</h2>
+                <button class="modal-close-icon-btn" id="closeSettingsIconBtn" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="settings-list">
+                <!-- Opción Crossfade -->
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-title"><i class="fa-solid fa-shuffle"></i> Crossfade Automático</div>
+                        <div class="setting-desc">Transición suave de 5 segundos entre decks al acercarse al final.</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="crossfadeToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <!-- Opción Playlist -->
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-title"><i class="fa-solid fa-list-check"></i> Modo Playlist</div>
+                        <div class="setting-desc">Detiene los decks y reproduce la playlist en orden con transiciones de 5s (intro/outro).</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="playlistModeToggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <!-- Botón de Ayuda (?) -->
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-title"><i class="fa-solid fa-keyboard"></i> Atajos de Teclado</div>
+                        <div class="setting-desc">Ver los controles y atajos de teclado para los decks.</div>
+                    </div>
+                    <button class="help-btn inside-settings" id="helpBtn" title="Ver Atajos de Teclado"><i class="fa-solid fa-question"></i></button>
+                </div>
+            </div>
+
+            <button class="close-modal-btn" id="closeSettingsModal">Guardar y Cerrar</button>
         </div>
-        <button class="help-btn" id="helpBtn" title="Atajos de Teclado"><i class="fa-solid fa-question"></i></button>
     </div>
 
     <!-- Modal de Ayuda -->
@@ -188,6 +228,66 @@
         </div>
 
     </div>
+ 
+    <!-- Botón Flotante Lateral Derecho (Drawer Toggle) -->
+    <button class="playlist-drawer-toggle" id="playlistDrawerToggle" title="Abrir Playlist y Búsqueda">
+        <i class="fa-solid fa-angles-left" id="playlistToggleIcon"></i>
+    </button>
+
+    <!-- Backdrop del Panel Lateral -->
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+    <!-- Panel Lateral Derecho (Playlist & Búsqueda) -->
+    <aside class="playlist-drawer" id="playlistDrawer">
+        <div class="drawer-header">
+            <h3><i class="fa-solid fa-compact-disc"></i> Playlist de Canciones</h3>
+            <button class="drawer-close-btn" id="closeDrawerBtn" title="Cerrar Panel"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Buscador idéntico al de los decks -->
+        <div class="drawer-search-container">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="drawerSearchInput" placeholder="Busca canción o pega link de YouTube...">
+            </div>
+            <div class="search-results" id="drawerSearchResults"></div>
+        </div>
+
+        <div class="playlist-section-header">
+            <span><i class="fa-solid fa-list-ul"></i> Cola de Canciones (<span id="playlistCount">0</span>)</span>
+            <button class="clear-playlist-btn" id="clearPlaylistBtn" title="Vaciar Playlist"><i class="fa-solid fa-trash-can"></i> Limpiar</button>
+        </div>
+
+        <!-- Lista de canciones acumuladas -->
+        <div class="playlist-items-container" id="playlistItemsContainer">
+            <div class="playlist-empty" id="playlistEmpty">
+                <i class="fa-solid fa-music"></i>
+                <p>Tu playlist está vacía</p>
+                <span>Busca canciones arriba para agregarlas como lista.</span>
+            </div>
+            <div class="playlist-list" id="playlistList"></div>
+        </div>
+
+        <!-- Controles Inferiores (visibles únicamente cuando el botón de configuración "playlist" está activo) -->
+        <div class="drawer-playlist-controls" id="drawerPlaylistControls">
+            <div class="playlist-controls-header">
+                <div class="playlist-now-playing-info">
+                    <span class="playlist-mode-tag"><i class="fa-solid fa-bolt"></i> Playlist Activa</span>
+                    <p class="playlist-current-track" id="playlistCurrentTrack">Sin reproducción activa</p>
+                </div>
+            </div>
+            <div class="playlist-time-slider">
+                <span id="playlistCurrentTime">0:00</span>
+                <input type="range" id="playlistSeek" value="0" min="0" max="100" step="0.1">
+                <span id="playlistDuration">0:00</span>
+            </div>
+            <div class="playlist-control-buttons">
+                <button class="custom-btn secondary-btn" id="playlistPrevBtn" title="Canción Anterior"><i class="fa-solid fa-backward-step"></i></button>
+                <button class="custom-btn" id="playlistPlayPauseBtn" title="Play / Pausa Playlist"><i class="fa-solid fa-play" id="playlistPlayIcon"></i></button>
+                <button class="custom-btn secondary-btn" id="playlistNextBtn" title="Siguiente Canción (Transición 5s)"><i class="fa-solid fa-forward-step"></i></button>
+            </div>
+        </div>
+    </aside>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="script.js"></script>

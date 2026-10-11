@@ -9,16 +9,43 @@ if (window.YT && window.YT.Player) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("v1.4")
+    console.log("v1.5")
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeSettingsModal = document.getElementById('closeSettingsModal');
+    const closeSettingsIconBtn = document.getElementById('closeSettingsIconBtn');
+    const playlistModeToggle = document.getElementById('playlistModeToggle');
+
     const helpBtn = document.getElementById('helpBtn');
     const helpModal = document.getElementById('helpModal');
     const closeModal = document.getElementById('closeModal');
 
-    helpBtn.addEventListener('click', () => helpModal.classList.add('active'));
-    closeModal.addEventListener('click', () => helpModal.classList.remove('active'));
-    helpModal.addEventListener('click', (e) => {
-        if (e.target === helpModal) helpModal.classList.remove('active');
-    });
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => settingsModal.classList.add('active'));
+    }
+    if (closeSettingsModal) {
+        closeSettingsModal.addEventListener('click', () => settingsModal.classList.remove('active'));
+    }
+    if (closeSettingsIconBtn) {
+        closeSettingsIconBtn.addEventListener('click', () => settingsModal.classList.remove('active'));
+    }
+    if (settingsModal) {
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) settingsModal.classList.remove('active');
+        });
+    }
+
+    if (helpBtn) {
+        helpBtn.addEventListener('click', () => helpModal.classList.add('active'));
+    }
+    if (closeModal) {
+        closeModal.addEventListener('click', () => helpModal.classList.remove('active'));
+    }
+    if (helpModal) {
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) helpModal.classList.remove('active');
+        });
+    }
 
     const masterPlayPauseBtn = document.getElementById('masterPlayPauseBtn');
     const masterIcon = document.getElementById('masterIcon');
@@ -27,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let deckLeftInstance = null;
     let deckRightInstance = null;
+    let playlistModeActive = false;
 
     const pipedInstances = [
         'https://pipedapi.kavin.rocks',
@@ -117,6 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const checkCrossfade = (currentTime, duration) => {
+            if (playlistModeActive) return;
             const isCrossfadeActive = crossfadeToggle ? crossfadeToggle.checked : true;
             if (!isCrossfadeActive) return;
 
@@ -400,6 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
             getCurrentYoutubeUrl: () => currentYoutubeUrl,
             isPlaying,
             getCurrentTime,
+            getDuration,
             ensureTrackPlayback,
             setVolumeLevel,
             jumpTime,
@@ -574,4 +604,599 @@ document.addEventListener('DOMContentLoaded', () => {
             select.dispatchEvent(new Event('change'));
         }
     }
-});
+
+    /* ========================================================
+       SISTEMA DE PLAYLIST, PANEL LATERAL Y REPRODUCCIÓN CONTINUA
+       ======================================================== */
+
+    const playlistDrawerToggle = document.getElementById('playlistDrawerToggle');
+    const playlistToggleIcon = document.getElementById('playlistToggleIcon');
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    const playlistDrawer = document.getElementById('playlistDrawer');
+    const closeDrawerBtn = document.getElementById('closeDrawerBtn');
+
+    const drawerSearchInput = document.getElementById('drawerSearchInput');
+    const drawerSearchResults = document.getElementById('drawerSearchResults');
+
+    const playlistCount = document.getElementById('playlistCount');
+    const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
+    const playlistEmpty = document.getElementById('playlistEmpty');
+    const playlistList = document.getElementById('playlistList');
+
+    const drawerPlaylistControls = document.getElementById('drawerPlaylistControls');
+    const playlistCurrentTrack = document.getElementById('playlistCurrentTrack');
+    const playlistCurrentTime = document.getElementById('playlistCurrentTime');
+    const playlistDuration = document.getElementById('playlistDuration');
+    const playlistSeek = document.getElementById('playlistSeek');
+    const playlistPrevBtn = document.getElementById('playlistPrevBtn');
+    const playlistPlayPauseBtn = document.getElementById('playlistPlayPauseBtn');
+    const playlistPlayIcon = document.getElementById('playlistPlayIcon');
+    const playlistNextBtn = document.getElementById('playlistNextBtn');
+
+    // Estado de la Playlist
+    let playlist = [];
+    try {
+        const saved = localStorage.getItem('dj_studio_playlist');
+        if (saved) playlist = JSON.parse(saved);
+    } catch(e) {
+        playlist = [];
+    }
+
+    let playlistCurrentIndex = 0;
+    let currentPlayingDeckSide = 'Left'; // Alterna entre 'Left' y 'Right'
+    let playlistTransitioning = false;
+    let playlistFadeInterval = null;
+    let playlistProgressInterval = null;
+    let isDraggingPlaylistSeek = false;
+
+    function savePlaylist() {
+        try {
+            localStorage.setItem('dj_studio_playlist', JSON.stringify(playlist));
+        } catch(e) {}
+    }
+
+    // Funciones de apertura / cierre del drawer
+    function openPlaylistDrawer() {
+        playlistDrawer.classList.add('open');
+        drawerBackdrop.classList.add('active');
+        playlistDrawerToggle.classList.add('drawer-open');
+        document.body.classList.add('drawer-open');
+    }
+
+    function closePlaylistDrawer() {
+        playlistDrawer.classList.remove('open');
+        drawerBackdrop.classList.remove('active');
+        playlistDrawerToggle.classList.remove('drawer-open');
+        document.body.classList.remove('drawer-open');
+        if (drawerSearchResults) drawerSearchResults.classList.remove('active');
+    }
+
+    function togglePlaylistDrawer() {
+        if (playlistDrawer.classList.contains('open')) {
+            closePlaylistDrawer();
+        } else {
+            openPlaylistDrawer();
+        }
+    }
+
+    if (playlistDrawerToggle) playlistDrawerToggle.addEventListener('click', togglePlaylistDrawer);
+    if (closeDrawerBtn) closeDrawerBtn.addEventListener('click', closePlaylistDrawer);
+    if (drawerBackdrop) drawerBackdrop.addEventListener('click', closePlaylistDrawer);
+
+    // Helpers de YouTube
+    function isYouTubeUrl(url) {
+        if (!url || typeof url !== 'string') return false;
+        return url.includes('youtube.com') || url.includes('youtu.be') || url.includes('music.youtube.com');
+    }
+
+    function extractVideoId(url) {
+        let videoId = "";
+        if (url.includes('v=')) {
+            videoId = url.split('v=')[1]?.split('&')[0];
+        } else if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        } else if (url.includes('embed/')) {
+            videoId = url.split('embed/')[1]?.split('?')[0];
+        }
+        return videoId || "dQw4w9WgXcQ";
+    }
+
+    // Búsqueda en el Drawer (YouTube Music / Piped)
+    let drawerSearchTimeout = null;
+
+    if (drawerSearchInput) {
+        drawerSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const query = drawerSearchInput.value.trim();
+                if (isYouTubeUrl(query)) {
+                    const vid = extractVideoId(query);
+                    addSongToPlaylist({
+                        title: 'Canción de YouTube',
+                        artist: `ID: ${vid}`,
+                        url: query,
+                        thumbnail: `https://img.youtube.com/vi/${vid}/hqdefault.jpg`
+                    });
+                    drawerSearchInput.value = '';
+                    drawerSearchResults.classList.remove('active');
+                    return;
+                }
+                const firstResult = drawerSearchResults.querySelector('.search-item');
+                if (firstResult) firstResult.click();
+            }
+        });
+
+        drawerSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            if (query === "") {
+                drawerSearchResults.classList.remove('active');
+                drawerSearchResults.innerHTML = '';
+                return;
+            }
+
+            if (isYouTubeUrl(query)) {
+                const vid = extractVideoId(query);
+                addSongToPlaylist({
+                    title: 'Canción de YouTube',
+                    artist: `ID: ${vid}`,
+                    url: query,
+                    thumbnail: `https://img.youtube.com/vi/${vid}/hqdefault.jpg`
+                });
+                drawerSearchInput.value = '';
+                drawerSearchResults.classList.remove('active');
+                return;
+            }
+
+            clearTimeout(drawerSearchTimeout);
+            drawerSearchTimeout = setTimeout(async () => {
+                let ytData = null;
+                for (let api of pipedInstances) {
+                    try {
+                        const response = await fetch(`${api}/search?q=${encodeURIComponent(query)}&filter=music_songs`);
+                        if (response.ok) {
+                            ytData = await response.json();
+                            break;
+                        }
+                    } catch (err) {
+                        continue;
+                    }
+                }
+
+                drawerSearchResults.innerHTML = '';
+                if (ytData && ytData.items && ytData.items.length > 0) {
+                    ytData.items.slice(0, 6).forEach(item => {
+                        const videoId = item.url ? item.url.split('v=')[1] : null;
+                        if (!videoId) return;
+                        const urlVideo = `https://www.youtube.com/watch?v=${videoId}`;
+
+                        const itemEl = document.createElement('div');
+                        itemEl.className = 'search-item';
+                        itemEl.innerHTML = `
+                            <img src="${item.thumbnail}" width="50" height="38" style="border-radius:4px; vertical-align:middle; object-fit:cover;">
+                            <div class="search-item-info" style="margin-left: 10px; flex: 1; overflow: hidden;">
+                                <h4 style="font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title}</h4>
+                                <p style="font-size:0.75rem; color:var(--text-muted);">${item.uploaderName || 'YouTube Music'}</p>
+                            </div>
+                            <span style="color:var(--accent); font-size:1.1rem; padding: 0 4px;" title="Agregar a la lista"><i class="fa-solid fa-plus"></i></span>
+                        `;
+                        itemEl.addEventListener('click', () => {
+                            addSongToPlaylist({
+                                title: item.title,
+                                artist: item.uploaderName || 'YouTube Music',
+                                url: urlVideo,
+                                thumbnail: item.thumbnail
+                            });
+                            drawerSearchInput.value = '';
+                            drawerSearchResults.classList.remove('active');
+                            drawerSearchResults.innerHTML = '';
+                        });
+                        drawerSearchResults.appendChild(itemEl);
+                    });
+                    drawerSearchResults.classList.add('active');
+                } else {
+                    drawerSearchResults.classList.remove('active');
+                }
+            }, 350);
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (drawerSearchInput && drawerSearchResults) {
+            if (!drawerSearchInput.contains(e.target) && !drawerSearchResults.contains(e.target)) {
+                drawerSearchResults.classList.remove('active');
+            }
+        }
+    });
+
+    // Gestión y renderizado de la Playlist
+    function addSongToPlaylist(song) {
+        playlist.push(song);
+        savePlaylist();
+        renderPlaylist();
+
+        // Si el modo playlist está activo pero no había ninguna canción reproduciéndose
+        if (playlistModeActive && playlist.length === 1) {
+            startPlaylistTrack(0, 'Left', true);
+        }
+    }
+
+    function removeSongFromPlaylist(index) {
+        const wasPlayingThis = playlistModeActive && playlistCurrentIndex === index;
+        playlist.splice(index, 1);
+        savePlaylist();
+
+        if (playlist.length === 0) {
+            playlistCurrentIndex = 0;
+            if (playlistModeActive) {
+                if (deckLeftInstance.isPlaying()) deckLeftInstance.togglePlay();
+                if (deckRightInstance.isPlaying()) deckRightInstance.togglePlay();
+                playlistCurrentTrack.textContent = "Playlist vacía";
+            }
+        } else if (wasPlayingThis) {
+            playlistCurrentIndex = playlistCurrentIndex % playlist.length;
+            if (playlistModeActive) {
+                startPlaylistTrack(playlistCurrentIndex, currentPlayingDeckSide, false);
+            }
+        } else if (playlistCurrentIndex >= playlist.length) {
+            playlistCurrentIndex = 0;
+        }
+
+        renderPlaylist();
+    }
+
+    if (clearPlaylistBtn) {
+        clearPlaylistBtn.addEventListener('click', () => {
+            if (playlist.length === 0) return;
+            if (confirm("¿Vaciar todas las canciones de la playlist?")) {
+                playlist = [];
+                savePlaylist();
+                if (playlistModeActive) {
+                    if (deckLeftInstance.isPlaying()) deckLeftInstance.togglePlay();
+                    if (deckRightInstance.isPlaying()) deckRightInstance.togglePlay();
+                    playlistCurrentTrack.textContent = "Playlist vacía";
+                }
+                renderPlaylist();
+            }
+        });
+    }
+
+    function renderPlaylist() {
+        if (!playlistCount || !playlistEmpty || !playlistList) return;
+        playlistCount.textContent = playlist.length;
+
+        if (playlist.length === 0) {
+            playlistEmpty.style.display = 'block';
+            playlistList.innerHTML = '';
+            return;
+        }
+
+        playlistEmpty.style.display = 'none';
+        playlistList.innerHTML = '';
+
+        playlist.forEach((song, idx) => {
+            const isPlayingThis = playlistModeActive && playlistCurrentIndex === idx;
+            const card = document.createElement('div');
+            card.className = `playlist-card ${isPlayingThis ? 'is-playing' : ''}`;
+            card.dataset.index = idx;
+
+            card.innerHTML = `
+                <img src="${song.thumbnail || 'https://via.placeholder.com/46'}" class="playlist-thumb" alt="Carátula">
+                <div class="playlist-card-content">
+                    <h4 class="playlist-card-title" title="${song.title}">
+                        ${isPlayingThis ? '<i class="fa-solid fa-volume-high" style="color:#10b981; margin-right:5px;"></i>' : ''}
+                        ${song.title}
+                    </h4>
+                    <p class="playlist-card-artist">${song.artist || 'YouTube Music'}</p>
+                    <div class="playlist-deck-actions">
+                        <button class="deck-btn-target left" data-deck="Left" title="Reproducir en Deck Izquierdo">
+                            <i class="fa-solid fa-arrow-left"></i> Deck Izq
+                        </button>
+                        <button class="deck-btn-target right" data-deck="Right" title="Reproducir en Deck Derecho">
+                            Deck Der <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <button class="playlist-remove-btn" data-remove="${idx}" title="Quitar de la lista">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            `;
+
+            // Cargar en Deck Izquierdo
+            card.querySelector('.deck-btn-target.left').addEventListener('click', (e) => {
+                e.stopPropagation();
+                loadSongDirectlyIntoDeck('Left', song);
+            });
+
+            // Cargar en Deck Derecho
+            card.querySelector('.deck-btn-target.right').addEventListener('click', (e) => {
+                e.stopPropagation();
+                loadSongDirectlyIntoDeck('Right', song);
+            });
+
+            // Quitar canción
+            card.querySelector('.playlist-remove-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeSongFromPlaylist(idx);
+            });
+
+            // Clic en la tarjeta: si modo playlist está activo, salta a esta canción
+            card.addEventListener('click', () => {
+                if (playlistModeActive) {
+                    startPlaylistTrack(idx, currentPlayingDeckSide, false);
+                } else {
+                    const leftPlaying = deckLeftInstance.isPlaying();
+                    const targetSide = leftPlaying ? 'Right' : 'Left';
+                    loadSongDirectlyIntoDeck(targetSide, song);
+                }
+            });
+
+            playlistList.appendChild(card);
+        });
+    }
+
+    function loadSongDirectlyIntoDeck(side, song) {
+        if (playlistModeActive) {
+            playlistModeToggle.checked = false;
+            disablePlaylistMode();
+        }
+        const searchInput = document.getElementById(`searchInput${side}`);
+        if (searchInput) searchInput.value = song.url;
+        const targetDeck = side === 'Left' ? deckLeftInstance : deckRightInstance;
+        targetDeck.initYouTubeWithRetry(song.url, true, 0);
+    }
+
+    // Inicializar renderizado de playlist guardada
+    renderPlaylist();
+
+    /* ========================================================
+       MOTOR DE REPRODUCCIÓN EN MODO PLAYLIST (TRANSICIONES 5s)
+       ======================================================== */
+
+    if (playlistModeToggle) {
+        playlistModeToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                enablePlaylistMode();
+            } else {
+                disablePlaylistMode();
+            }
+        });
+    }
+
+    function enablePlaylistMode() {
+        playlistModeActive = true;
+        drawerPlaylistControls.classList.add('active');
+
+        // Detener inmediatamente cualquier canción que esté sonando en los decks
+        if (deckLeftInstance.isPlaying()) {
+            const ytL = deckLeftInstance.getYtPlayer();
+            if (ytL && typeof ytL.pauseVideo === 'function') ytL.pauseVideo();
+        }
+        if (deckRightInstance.isPlaying()) {
+            const ytR = deckRightInstance.getYtPlayer();
+            if (ytR && typeof ytR.pauseVideo === 'function') ytR.pauseVideo();
+        }
+
+        if (playlist.length === 0) {
+            playlistCurrentTrack.textContent = "Agrega canciones para reproducir";
+            openPlaylistDrawer();
+            return;
+        }
+
+        playlistCurrentIndex = 0;
+        currentPlayingDeckSide = 'Left';
+        startPlaylistTrack(playlistCurrentIndex, 'Left', true);
+        startPlaylistProgressWatcher();
+    }
+
+    function disablePlaylistMode() {
+        playlistModeActive = false;
+        drawerPlaylistControls.classList.remove('active');
+        if (playlistFadeInterval) {
+            clearInterval(playlistFadeInterval);
+            playlistFadeInterval = null;
+        }
+        if (playlistProgressInterval) {
+            clearInterval(playlistProgressInterval);
+            playlistProgressInterval = null;
+        }
+        playlistTransitioning = false;
+        renderPlaylist();
+    }
+
+    function startPlaylistTrack(index, side, withIntroFade = true) {
+        if (index < 0 || index >= playlist.length) return;
+        playlistCurrentIndex = index;
+        currentPlayingDeckSide = side;
+
+        const track = playlist[index];
+        playlistCurrentTrack.textContent = track.title;
+        playlistPlayIcon.className = 'fa-solid fa-pause';
+        renderPlaylist();
+
+        const targetDeck = side === 'Left' ? deckLeftInstance : deckRightInstance;
+        const otherDeck = side === 'Left' ? deckRightInstance : deckLeftInstance;
+
+        // Asegurarse de que el otro deck esté en pausa
+        const otherYt = otherDeck.getYtPlayer();
+        if (otherYt && typeof otherYt.pauseVideo === 'function') {
+            otherYt.pauseVideo();
+        }
+
+        const targetSearch = document.getElementById(`searchInput${side}`);
+        if (targetSearch) targetSearch.value = track.url;
+
+        if (withIntroFade) {
+            // Intro de 5 segundos: empieza en volumen 0 y asciende a 1
+            targetDeck.setVolumeLevel(0);
+            targetDeck.initYouTubeWithRetry(track.url, true, 0);
+
+            if (playlistFadeInterval) clearInterval(playlistFadeInterval);
+            let steps = 50;
+            let stepTime = 5000 / steps;
+            let currentStep = 0;
+            playlistFadeInterval = setInterval(() => {
+                currentStep++;
+                let vol = Math.min(1, currentStep / steps);
+                targetDeck.setVolumeLevel(vol);
+                if (currentStep >= steps) {
+                    clearInterval(playlistFadeInterval);
+                    playlistFadeInterval = null;
+                }
+            }, stepTime);
+        } else {
+            targetDeck.setVolumeLevel(1);
+            targetDeck.initYouTubeWithRetry(track.url, true, 0);
+        }
+    }
+
+    function transitionToNextPlaylistTrack() {
+        if (playlistTransitioning || playlist.length === 0) return;
+        if (playlist.length === 1) {
+            // Una sola canción en la playlist: reiniciar con intro de 5s
+            startPlaylistTrack(0, currentPlayingDeckSide, true);
+            return;
+        }
+
+        playlistTransitioning = true;
+        const nextIndex = (playlistCurrentIndex + 1) % playlist.length;
+        const nextSide = currentPlayingDeckSide === 'Left' ? 'Right' : 'Left';
+
+        const outgoingDeck = currentPlayingDeckSide === 'Left' ? deckLeftInstance : deckRightInstance;
+        const incomingDeck = nextSide === 'Left' ? deckLeftInstance : deckRightInstance;
+        const nextTrack = playlist[nextIndex];
+
+        playlistCurrentTrack.textContent = nextTrack.title;
+        const nextSearch = document.getElementById(`searchInput${nextSide}`);
+        if (nextSearch) nextSearch.value = nextTrack.url;
+
+        // La canción entrante arranca en volumen 0
+        incomingDeck.setVolumeLevel(0);
+        incomingDeck.initYouTubeWithRetry(nextTrack.url, true, 0);
+
+        if (playlistFadeInterval) clearInterval(playlistFadeInterval);
+        let steps = 50;
+        let stepTime = 5000 / steps; // 5 segundos exactos
+        let currentStep = 0;
+        let outVolStart = 1;
+        let inVolTarget = 1;
+
+        playlistFadeInterval = setInterval(() => {
+            currentStep++;
+            let progress = currentStep / steps;
+
+            // Outro de 5 segundos para la saliente
+            let newOutVol = Math.max(0, outVolStart * (1 - progress));
+            outgoingDeck.setVolumeLevel(newOutVol);
+
+            // Intro de 5 segundos para la entrante
+            let newInVol = Math.min(1, inVolTarget * progress);
+            incomingDeck.setVolumeLevel(newInVol);
+
+            if (currentStep >= steps) {
+                clearInterval(playlistFadeInterval);
+                playlistFadeInterval = null;
+
+                const ytOut = outgoingDeck.getYtPlayer();
+                if (ytOut && typeof ytOut.pauseVideo === 'function') ytOut.pauseVideo();
+                outgoingDeck.setVolumeLevel(1);
+
+                playlistTransitioning = false;
+                currentPlayingDeckSide = nextSide;
+                playlistCurrentIndex = nextIndex;
+                renderPlaylist();
+            }
+        }, stepTime);
+    }
+
+    function startPlaylistProgressWatcher() {
+        if (playlistProgressInterval) clearInterval(playlistProgressInterval);
+        playlistProgressInterval = setInterval(() => {
+            if (!playlistModeActive) return;
+
+            const activeDeck = currentPlayingDeckSide === 'Left' ? deckLeftInstance : deckRightInstance;
+            if (!activeDeck) return;
+
+            const cur = activeDeck.getCurrentTime ? activeDeck.getCurrentTime() : 0;
+            const dur = activeDeck.getDuration ? activeDeck.getDuration() : 0;
+
+            playlistCurrentTime.textContent = formatTime(cur);
+            playlistDuration.textContent = formatTime(dur);
+
+            if (!isDraggingPlaylistSeek && dur > 0) {
+                playlistSeek.value = (cur / dur) * 100;
+            }
+
+            if (activeDeck.isPlaying()) {
+                playlistPlayIcon.className = 'fa-solid fa-pause';
+            } else {
+                playlistPlayIcon.className = 'fa-solid fa-play';
+            }
+
+            // Outro automático de 5 segundos
+            if (dur > 8 && (dur - cur) <= 5 && !playlistTransitioning) {
+                transitionToNextPlaylistTrack();
+            }
+        }, 500);
+    }
+
+    // Controles de Playback de la Playlist
+    if (playlistPlayPauseBtn) {
+        playlistPlayPauseBtn.addEventListener('click', () => {
+            const activeDeck = currentPlayingDeckSide === 'Left' ? deckLeftInstance : deckRightInstance;
+            if (activeDeck) {
+                activeDeck.togglePlay();
+            }
+        });
+    }
+
+    if (playlistNextBtn) {
+        playlistNextBtn.addEventListener('click', () => {
+            transitionToNextPlaylistTrack();
+        });
+    }
+
+    if (playlistPrevBtn) {
+        playlistPrevBtn.addEventListener('click', () => {
+            const activeDeck = currentPlayingDeckSide === 'Left' ? deckLeftInstance : deckRightInstance;
+            const cur = activeDeck ? activeDeck.getCurrentTime() : 0;
+            if (cur > 4) {
+                const yt = activeDeck.getYtPlayer();
+                if (yt && typeof yt.seekTo === 'function') yt.seekTo(0, true);
+            } else {
+                if (playlist.length > 1) {
+                    const prevIndex = (playlistCurrentIndex - 1 + playlist.length) % playlist.length;
+                    startPlaylistTrack(prevIndex, currentPlayingDeckSide, true);
+                }
+            }
+        });
+    }
+
+    if (playlistSeek) {
+        playlistSeek.addEventListener('mousedown', () => isDraggingPlaylistSeek = true);
+        playlistSeek.addEventListener('touchstart', () => isDraggingPlaylistSeek = true);
+        playlistSeek.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            const activeDeck = currentPlayingDeckSide === 'Left' ? deckLeftInstance : deckRightInstance;
+            const dur = activeDeck && activeDeck.getDuration ? activeDeck.getDuration() : 0;
+            playlistCurrentTime.textContent = formatTime((val / 100) * dur);
+        });
+        playlistSeek.addEventListener('change', (e) => {
+            const val = parseFloat(e.target.value);
+            const activeDeck = currentPlayingDeckSide === 'Left' ? deckLeftInstance : deckRightInstance;
+            const dur = activeDeck && activeDeck.getDuration ? activeDeck.getDuration() : 0;
+            const yt = activeDeck ? activeDeck.getYtPlayer() : null;
+            if (yt && typeof yt.seekTo === 'function') {
+                yt.seekTo((val / 100) * dur, true);
+            }
+            isDraggingPlaylistSeek = false;
+        });
+    }
+
+    // Tecla Escape para cerrar drawer y modales
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closePlaylistDrawer();
+            if (settingsModal) settingsModal.classList.remove('active');
+            if (helpModal) helpModal.classList.remove('active');
+        }
+    });
+});
