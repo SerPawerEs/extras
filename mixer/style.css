@@ -554,16 +554,102 @@ kbd {
     cursor: pointer;
 }
 
+/* --- ADAPTACIÓN EXCLUSIVA PARA CELULARES (Móvil) --- */
 @media(max-width: 900px) {
     .main-container {
         flex-direction: column;
         height: auto;
+        padding-top: 110px;
     }
+    
     .player-panel {
-        min-height: 500px;
+        min-height: auto;
+        padding: 15px;
     }
+    
     #panelLeft {
         border-right: none;
         border-bottom: 2px solid var(--panel-border);
+    }
+
+    /* Reducir y reposicionar controles superiores para evitar solapamiento */
+    .top-right-controls {
+        top: 8px;
+        right: 8px;
+        gap: 6px;
+    }
+
+    .crossfade-switch-container {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+        gap: 5px;
+    }
+
+    .switch {
+        width: 32px;
+        height: 18px;
+    }
+
+    .slider:before {
+        height: 14px;
+        width: 14px;
+        left: 2px;
+        bottom: 2px;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(14px);
+    }
+
+    .help-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+
+    /* Barra central superior adaptada */
+    .master-control-bar {
+        top: 8px;
+        left: 8px;
+        transform: none;
+        gap: 6px;
+    }
+
+    .master-btn, .transition-center-btn {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        border-radius: 20px;
+    }
+
+    /* Salto de línea en los controles inferiores para que no se estiren horizontalmente */
+    .control-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .playback-btns {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    /* Fila inferior para agrupar volumen y velocidad */
+    .control-row > div:not(.playback-btns) {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .control-group {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        width: 48%;
+    }
+
+    .control-group input[type="range"] {
+        width: 100px;
     }
 }
