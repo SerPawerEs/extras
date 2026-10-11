@@ -554,12 +554,12 @@ kbd {
     cursor: pointer;
 }
 
-/* --- ADAPTACIÓN EXCLUSIVA PARA CELULARES (Móvil) --- */
+/* --- ADAPTACIÓN MÓVIL (Celular) --- */
 @media(max-width: 900px) {
     .main-container {
         flex-direction: column;
         height: auto;
-        padding-top: 110px;
+        padding-top: 130px; /* Espacio extra arriba para los botones apilados */
     }
     
     .player-panel {
@@ -572,7 +572,7 @@ kbd {
         border-bottom: 2px solid var(--panel-border);
     }
 
-    /* Reducir y reposicionar controles superiores para evitar solapamiento */
+    /* Controles superiores compactos (Crossfade y Ayuda) */
     .top-right-controls {
         top: 8px;
         right: 8px;
@@ -607,25 +607,27 @@ kbd {
         font-size: 0.9rem;
     }
 
-    /* Barra central superior adaptada */
+    /* Botones centrales apilados: Master Play arriba, Transición debajo */
     .master-control-bar {
         top: 8px;
         left: 8px;
         transform: none;
-        gap: 6px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
     }
 
     .master-btn, .transition-center-btn {
-        padding: 6px 12px;
-        font-size: 0.75rem;
-        border-radius: 20px;
+        padding: 5px 10px;
+        font-size: 0.7rem;
+        border-radius: 15px;
     }
 
-    /* Salto de línea en los controles inferiores para que no se estiren horizontalmente */
+    /* Controles inferiores del reproductor */
     .control-row {
         flex-direction: column;
         align-items: stretch;
-        gap: 12px;
+        gap: 10px;
     }
 
     .playback-btns {
@@ -633,23 +635,28 @@ kbd {
         width: 100%;
     }
 
-    /* Fila inferior para agrupar volumen y velocidad */
+    /* Fila inferior donde volumen y velocidad van lado a lado */
     .control-row > div:not(.playback-btns) {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
         width: 100%;
+        gap: 10px;
     }
 
     .control-group {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        width: 48%;
+        flex: 1;
+        background: var(--bg-color);
+        border: 1px solid var(--panel-border);
+        padding: 6px 10px;
+        border-radius: 8px;
     }
 
     .control-group input[type="range"] {
-        width: 100px;
+        width: 70px;
     }
 }
