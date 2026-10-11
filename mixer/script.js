@@ -9,7 +9,7 @@ if (window.YT && window.YT.Player) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("v1.1")
+    console.log("v1.2")
     const helpBtn = document.getElementById('helpBtn');
     const helpModal = document.getElementById('helpModal');
     const closeModal = document.getElementById('closeModal');
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // --- BUSCADOR EXCLUSIVO DE YOUTUBE (Vía Piped API) ---
+        // --- BUSCADOR OPTIMIZADO PARA YOUTUBE MUSIC (Vía Piped API) ---
         let searchTimeout = null;
 
         searchInput.addEventListener('keydown', (e) => {
@@ -211,7 +211,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 let ytData = null;
                 for (let api of pipedInstances) {
                     try {
-                        const response = await fetch(`${api}/search?q=${encodeURIComponent(query)}&filter=videos`);
+                        // Usamos filter=music_songs para priorizar contenido de YouTube Music
+                        const response = await fetch(`${api}/search?q=${encodeURIComponent(query)}&filter=music_songs`);
                         if (response.ok) {
                             ytData = await response.json();
                             break;
@@ -234,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <img src="${item.thumbnail}" width="60" style="border-radius:4px; vertical-align:middle; object-fit:cover; height:45px;">
                             <div class="search-item-info" style="margin-left: 10px;">
                                 <h4 style="font-size:0.85rem;">${item.title}</h4>
-                                <p>YouTube</p>
+                                <p>YouTube Music</p>
                             </div>
                         `;
                         ytItem.addEventListener('click', () => {
@@ -252,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
         function ensureTrackPlayback(youtubeUrl) {
             if (!youtubeUrl) return;
 
-            // Si es la misma URL que ya estaba en este deck, solo reanudamos
             if (currentYoutubeUrl === youtubeUrl && ytPlayer && typeof ytPlayer.playVideo === 'function') {
                 ytPlayer.playVideo();
                 playIcon.classList.replace('fa-play', 'fa-pause');
@@ -260,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateMasterState();
                 updateCenterButtonState();
             } else {
-                // Si es una canción nueva, arranca limpiamente desde el segundo 0
                 initYouTubeWithRetry(youtubeUrl, true, 0);
             }
         }
@@ -315,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!videoId) {
-                alert("Enlace de YouTube no válido.");
+                alert("Enlace no válido.");
                 return;
             }
 
@@ -324,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentYoutubeUrl = url;
 
             ytContainerEl.classList.add('active');
-            trackTitle.textContent = "Audio de YouTube";
+            trackTitle.textContent = "YouTube Music";
             trackArtist.textContent = `ID: ${videoId}`;
 
             if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
@@ -439,7 +438,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (targetYtUrl) {
-            // El deck entrante reproduce su propia canción desde su lugar actual (o desde 0)
             incomingDeck.ensureTrackPlayback(targetYtUrl);
         }
 
