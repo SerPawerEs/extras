@@ -3,31 +3,430 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Buscador musical</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de música</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: Arial, sans-serif;
+            background: #121212;
+            color: white;
+        }
+
+        .contenedor {
+            max-width: 850px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #4de3c1;
+            text-align: center;
+        }
+
+        .buscador {
+            display: flex;
+            gap: 10px;
+            margin: 25px 0;
+        }
+
+        input {
+            flex: 1;
+            min-width: 0;
+            padding: 13px;
+            border: 1px solid #444;
+            border-radius: 8px;
+            background: #222;
+            color: white;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 11px 14px;
+            border: 0;
+            border-radius: 7px;
+            background: #4de3c1;
+            color: #111;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            filter: brightness(.9);
+        }
+
+        #estado {
+            color: #bbb;
+            overflow-wrap: anywhere;
+        }
+
+        .cancion {
+            padding: 16px;
+            margin: 12px 0;
+            background: #202020;
+            border: 1px solid #383838;
+            border-radius: 10px;
+        }
+
+        .nombre {
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        .artista {
+            margin-bottom: 12px;
+            color: #bbb;
+            font-size: 14px;
+        }
+
+        .acciones {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .secundario {
+            background: #383838;
+            color: white;
+        }
+
+        .enlace {
+            display: block;
+            margin-top: 12px;
+            color: #4de3c1;
+            font-size: 13px;
+            overflow-wrap: anywhere;
+        }
+
+        #reproductor {
+            margin-top: 20px;
+        }
+
+        #reproductor iframe {
+            display: block;
+            width: 100%;
+            max-width: 560px;
+            aspect-ratio: 16 / 9;
+            border: 0;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding: 14px;
+            }
+
+            .buscador {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
+
 <body>
-    <h2>Buscador musical</h2>
+    <main class="contenedor">
+        <h1>🎵 Buscador de música</h1>
 
-    <input
-        id="busqueda"
-        type="text"
-        placeholder="Canción, artista o enlace..."
-        style="width:300px"
-    >
+        <p>
+            Busca una canción y obtén su enlace directo de YouTube Music.
+        </p>
 
-    <button id="buscar">Buscar / Reproducir</button>
+        <div class="buscador">
+            <input
+                id="busqueda"
+                type="text"
+                placeholder="Ej. Blinding Lights The Weeknd"
+            >
+            <button id="buscar">Buscar</button>
+        </div>
 
-    <p id="estado">Escribe una canción o pega un enlace.</p>
+        <p id="estado">Escribe el nombre de una canción.</p>
+        <section id="resultados"></section>
 
-    <div id="resultados"></div>
+        <h2 id="titulo">Reproductor</h2>
+        <div id="reproductor"></div>
+    </main>
 
-    <h3 id="titulo">Reproductor</h3>
+    <script>
+        const busqueda = document.getElementById("busqueda");
+        const botonBuscar = document.getElementById("buscar");
+        const resultados = document.getElementById("resultados");
+        const estado = document.getElementById("estado");
+        const reproductor = document.getElementById("reproductor");
+        const titulo = document.getElementById("titulo");
 
-    <div id="reproductor"></div>
+        // Instancias públicas alternativas; ninguna requiere una API key.
+        const instancias = [
+            "https://inv.nadeko.net",
+            "https://invidious.nerdvpn.de",
+            "https://invidious.privacydev.net"
+        ];
 
-    <audio id="preview" controls style="width:350px; display:none"></audio>
+        botonBuscar.addEventListener("click", buscar);
 
-    <script src="script.js"></script>
+        busqueda.addEventListener("keydown", event => {
+            if (event.key === "Enter") buscar();
+        });
+
+        async function buscar() {
+            const texto = busqueda.value.trim();
+
+            if (!texto) {
+                estado.textContent = "Escribe el nombre de una canción.";
+                return;
+            }
+
+            let url;
+
+            try {
+                url = new URL(texto);
+            } catch {
+                url = null;
+            }
+
+            if (url && ["https:", "http:"].includes(url.protocol)) {
+                manejarEnlace(url);
+                return;
+            }
+
+            await buscarVideos(texto);
+        }
+
+        async function buscarVideos(texto) {
+            resultados.replaceChildren();
+            reproductor.replaceChildren();
+            titulo.textContent = "Reproductor";
+            estado.textContent = "Buscando canciones...";
+
+            botonBuscar.disabled = true;
+
+            try {
+                const videos = await consultarInstancias(texto);
+
+                if (!videos.length) {
+                    estado.textContent = "No se encontraron resultados.";
+                    return;
+                }
+
+                estado.textContent =
+                    `Se encontraron ${videos.length} resultados.`;
+
+                videos.forEach(video => {
+                    if (!video.videoId) return;
+                    crearTarjeta(video);
+                });
+
+                if (!resultados.children.length) {
+                    estado.textContent =
+                        "La búsqueda no devolvió videos válidos.";
+                }
+            } catch (error) {
+                console.error(error);
+
+                estado.textContent =
+                    "No se pudo consultar ninguna instancia pública. " +
+                    "Intenta de nuevo más tarde.";
+            } finally {
+                botonBuscar.disabled = false;
+            }
+        }
+
+        async function consultarInstancias(texto) {
+            let ultimoError;
+
+            for (const instancia of instancias) {
+                try {
+                    const url = instancia +
+                        "/api/v1/search?q=" +
+                        encodeURIComponent(texto) +
+                        "&type=video&region=CO";
+
+                    const respuesta = await fetch(url, {
+                        headers: { "Accept": "application/json" }
+                    });
+
+                    if (!respuesta.ok) {
+                        throw new Error("HTTP " + respuesta.status);
+                    }
+
+                    const datos = await respuesta.json();
+
+                    if (!Array.isArray(datos)) {
+                        throw new Error("Respuesta inesperada");
+                    }
+
+                    return datos
+                        .filter(video =>
+                            video.type === "video" &&
+                            /^[\w-]{11}$/.test(video.videoId || "")
+                        )
+                        .slice(0, 20);
+                } catch (error) {
+                    ultimoError = error;
+                    console.warn(
+                        "Instancia no disponible:",
+                        instancia,
+                        error
+                    );
+                }
+            }
+
+            throw ultimoError || new Error("Búsqueda no disponible");
+        }
+
+        function crearTarjeta(video) {
+            const tarjeta = document.createElement("article");
+            tarjeta.className = "cancion";
+
+            const nombre = document.createElement("div");
+            nombre.className = "nombre";
+            nombre.textContent = video.title || "Canción sin título";
+
+            const artista = document.createElement("div");
+            artista.className = "artista";
+            artista.textContent = video.author || "Artista desconocido";
+
+            // Este sí es un enlace a un video específico.
+            const enlaceDirecto =
+                "https://music.youtube.com/watch?v=" +
+                encodeURIComponent(video.videoId);
+
+            const acciones = document.createElement("div");
+            acciones.className = "acciones";
+
+            const reproducir = document.createElement("button");
+            reproducir.textContent = "Reproducir aquí";
+            reproducir.addEventListener("click", () => {
+                reproducirVideo(video.videoId, video.title);
+            });
+
+            const abrir = document.createElement("button");
+            abrir.className = "secundario";
+            abrir.textContent = "Abrir YouTube Music";
+            abrir.addEventListener("click", () => {
+                window.open(
+                    enlaceDirecto,
+                    "_blank",
+                    "noopener,noreferrer"
+                );
+            });
+
+            const copiar = document.createElement("button");
+            copiar.className = "secundario";
+            copiar.textContent = "Copiar enlace directo";
+            copiar.addEventListener("click", async () => {
+                try {
+                    await navigator.clipboard.writeText(enlaceDirecto);
+                    estado.textContent = "Enlace directo copiado.";
+                } catch {
+                    mostrarEnlace(enlaceDirecto);
+                }
+            });
+
+            const enlace = document.createElement("a");
+            enlace.className = "enlace";
+            enlace.href = enlaceDirecto;
+            enlace.target = "_blank";
+            enlace.rel = "noopener noreferrer";
+            enlace.textContent = enlaceDirecto;
+
+            acciones.append(reproducir, abrir, copiar);
+            tarjeta.append(nombre, artista, acciones, enlace);
+            resultados.appendChild(tarjeta);
+        }
+
+        function reproducirVideo(videoId, nombre) {
+            reproductor.replaceChildren();
+
+            const iframe = document.createElement("iframe");
+            iframe.src =
+                "https://www.youtube-nocookie.com/embed/" +
+                encodeURIComponent(videoId);
+
+            iframe.title = nombre || "Reproductor de música";
+            iframe.allow =
+                "autoplay; encrypted-media; picture-in-picture; fullscreen";
+            iframe.allowFullscreen = true;
+
+            reproductor.appendChild(iframe);
+            titulo.textContent = nombre || "Reproductor";
+            estado.textContent =
+                "Reproduciendo mediante el reproductor de YouTube, " +
+                "si el video permite reproducción incrustada.";
+        }
+
+        function manejarEnlace(url) {
+            const hosts = [
+                "youtube.com",
+                "www.youtube.com",
+                "music.youtube.com",
+                "m.youtube.com",
+                "youtu.be"
+            ];
+
+            if (!hosts.includes(url.hostname.toLowerCase())) {
+                estado.textContent =
+                    "Pega un enlace válido de YouTube o YouTube Music.";
+                return;
+            }
+
+            const partes = url.pathname.split("/").filter(Boolean);
+            let id = url.searchParams.get("v") || "";
+
+            if (url.hostname.toLowerCase() === "youtu.be") {
+                id = partes[0] || "";
+            } else if (
+                !id &&
+                ["shorts", "embed", "live"].includes(partes[0])
+            ) {
+                id = partes[1] || "";
+            }
+
+            if (id && /^[\w-]{11}$/.test(id)) {
+                resultados.replaceChildren();
+                reproducirVideo(id, "Video de YouTube");
+                return;
+            }
+
+            if (url.searchParams.get("list")) {
+                const lista = document.createElement("iframe");
+                lista.src =
+                    "https://www.youtube-nocookie.com/embed/videoseries?list=" +
+                    encodeURIComponent(url.searchParams.get("list"));
+                lista.title = "Playlist de YouTube";
+                lista.allowFullscreen = true;
+                lista.allow = "autoplay; encrypted-media; fullscreen";
+
+                reproductor.replaceChildren(lista);
+                estado.textContent = "Playlist cargada.";
+                return;
+            }
+
+            if (
+                url.hostname.toLowerCase() === "music.youtube.com" &&
+                url.pathname.startsWith("/search")
+            ) {
+                window.open(url.href, "_blank", "noopener,noreferrer");
+                estado.textContent = "Búsqueda abierta en YouTube Music.";
+                return;
+            }
+
+            estado.textContent =
+                "No se pudo identificar el video en ese enlace.";
+        }
+
+        function mostrarEnlace(url) {
+            busqueda.value = url;
+            busqueda.focus();
+            busqueda.select();
+            estado.textContent =
+                "No se pudo copiar automáticamente. Copia el enlace seleccionado.";
+        }
+    </script>
 </body>
 </html>
