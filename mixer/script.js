@@ -9,7 +9,6 @@ if (window.YT && window.YT.Player) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("v1.1")
     const helpBtn = document.getElementById('helpBtn');
     const helpModal = document.getElementById('helpModal');
     const closeModal = document.getElementById('closeModal');
@@ -28,6 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let localLibrary = [];
     let deckLeftInstance = null;
     let deckRightInstance = null;
+
+    const pipedInstances = [
+        'https://pipedapi.kavin.rocks',
+        'https://api.piped.private.coffee',
+        'https://pipedapi.mha.fi'
+    ];
 
     async function loadSongsJSON() {
         try {
@@ -66,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextBtn = document.getElementById(`next${side}Btn`);
 
         let isDraggingSeek = false;
-        let mode = 'none'; // 'local' o 'youtube'
+        let mode = 'none';
         let ytPlayer = null;
         let progressInterval = null;
         let crossfadeTriggered = false;
@@ -244,21 +249,22 @@ document.addEventListener('DOMContentLoaded', () => {
             loadLocalTrack(filename, filename.replace(/\.[^/.]+$/, ""), true);
         }
 
+        // --- BUSCADOR HÍBRIDO (Local + YouTube mediante Piped API) ---
+        let searchTimeout = null;
+
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const query = searchInput.value.trim();
+                searchResults.classList.remove('active');
                 if (query.includes('youtube.com') || query.includes('youtu.be') || query.includes('music.youtube.com')) {
-                    searchResults.classList.remove('active');
                     initYouTubeWithRetry(query, false, 0);
                     return;
                 }
-
                 const filtered = localLibrary.filter(song => song.toLowerCase().includes(query.toLowerCase()));
                 if (filtered.length > 0) {
                     const filename = filtered[0];
                     const cleanName = filename.replace(/\.[^/.]+$/, "");
                     loadLocalTrack(filename, cleanName, false);
-                    searchResults.classList.remove('active');
                     searchInput.value = cleanName;
                 }
             }
@@ -278,32 +284,75 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const filtered = localLibrary.filter(song => song.toLowerCase().includes(query.toLowerCase()));
+            // Mostrar resultados locales primero
+            const localFiltered = localLibrary.filter(song => song.toLowerCase().includes(query.toLowerCase()));
+            
             searchResults.innerHTML = '';
-            if (filtered.length > 0) {
-                filtered.forEach((filename) => {
-                    const cleanName = filename.replace(/\.[^/.]+$/, "");
-                    const item = document.createElement('div');
-                    item.className = 'search-item';
-                    item.innerHTML = `
-                        <i class="fa-solid fa-music"></i>
-                        <div class="search-item-info">
-                            <h4>${cleanName}</h4>
-                            <p>songs/${filename}</p>
-                        </div>
-                    `;
-                    item.addEventListener('click', () => {
-                        loadLocalTrack(filename, cleanName, false);
-                        searchResults.classList.remove('active');
-                        searchInput.value = cleanName;
-                    });
-                    searchResults.appendChild(item);
+            let hasResults = false;
+
+            localFiltered.forEach((filename) => {
+                hasResults = true;
+                const cleanName = filename.replace(/\.[^/.]+$/, "");
+                const item = document.createElement('div');
+                item.className = 'search-item';
+                item.innerHTML = `
+                    <i class="fa-solid fa-music"></i>
+                    <div class="search-item-info">
+                        <h4>${cleanName}</h4>
+                        <p>Local: songs/${filename}</p>
+                    </div>
+                `;
+                item.addEventListener('click', () => {
+                    loadLocalTrack(filename, cleanName, false);
+                    searchResults.classList.remove('active');
+                    searchInput.value = cleanName;
                 });
-                searchResults.classList.add('active');
-            } else {
-                searchResults.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-muted)">No encontrado (o pega link de YouTube)</div>';
-                searchResults.classList.add('active');
-            }
+                searchResults.appendChild(item);
+            });
+
+            if (hasResults) searchResults.classList.add('active');
+
+            // Búsqueda en YouTube con debounce vía Piped API
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                let ytData = null;
+                for (let api of pipedInstances) {
+                    try {
+                        const response = await fetch(`${api}/search?q=${encodeURIComponent(query)}&filter=videos`);
+                        if (response.ok) {
+                            ytData = await response.json();
+                            break;
+                        }
+                    } catch (err) {
+                        continue;
+                    }
+                }
+
+                if (ytData && ytData.items && ytData.items.length > 0) {
+                    ytData.items.slice(0, 5).forEach(item => {
+                        const videoId = item.url ? item.url.split('v=')[1] : null;
+                        if (!videoId) return;
+                        const urlVideo = `https://www.youtube.com/watch?v=${videoId}`;
+
+                        const ytItem = document.createElement('div');
+                        ytItem.className = 'search-item';
+                        ytItem.innerHTML = `
+                            <img src="${item.thumbnail}" width="60" style="border-radius:4px; vertical-align:middle; object-fit:cover; height:45px;">
+                            <div class="search-item-info" style="margin-left: 10px;">
+                                <h4 style="font-size:0.85rem;">${item.title}</h4>
+                                <p>YouTube</p>
+                            </div>
+                        `;
+                        ytItem.addEventListener('click', () => {
+                            searchInput.value = urlVideo;
+                            initYouTubeWithRetry(urlVideo, false, 0);
+                            searchResults.classList.remove('active');
+                        });
+                        searchResults.appendChild(ytItem);
+                    });
+                    searchResults.classList.add('active');
+                }
+            }, 400);
         });
 
         function loadLocalTrack(filename, cleanName, autoPlay = false, startTime = 0) {
@@ -344,14 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function ensureTrackPlayback(songFilename, youtubeUrl, startTime = 0) {
             if (youtubeUrl) {
-                // Si ya está cargada la misma URL en YouTube, solo aseguramos que reproduzca desde su tiempo actual (o startSeconds)
-                if (currentYoutubeUrl === youtubeUrl && mode === 'youtube' && ytPlayer) {
-                    if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
-                        ytPlayer.playVideo();
-                    }
-                } else {
-                    initYouTubeWithRetry(youtubeUrl, true, startTime);
-                }
+                initYouTubeWithRetry(youtubeUrl, true, startTime);
             } else if (songFilename) {
                 if (currentSongFilename === songFilename && mode === 'local') {
                     if (audio.paused) {
@@ -503,7 +545,6 @@ document.addEventListener('DOMContentLoaded', () => {
             getCurrentYoutubeUrl: () => currentYoutubeUrl,
             isPlaying,
             getCurrentTime,
-            getDuration,
             ensureTrackPlayback,
             setVolumeLevel,
             jumpTime,
@@ -558,15 +599,9 @@ document.addEventListener('DOMContentLoaded', () => {
             targetSong = localLibrary[0];
         }
 
-        // CORRECCIÓN CLAVE: Si el deck entrante ya tenía cargado el mismo link de YouTube, 
-        // NO forzamos un reset ni un startSeconds desde 0 que heredara la duración del otro,
-        // sino que mantenemos su posición temporal actual exacta (o 0 si es nuevo).
-        let currentPos = 0;
-        if (incomingDeck.getCurrentYoutubeUrl() === targetYtUrl || incomingDeck.getCurrentSongFilename() === targetSong) {
-            currentPos = incomingDeck.getCurrentTime();
-        }
+        const currentTime = outgoingDeck.getCurrentTime();
 
-        incomingDeck.ensureTrackPlayback(targetSong, targetYtUrl, currentPos);
+        incomingDeck.ensureTrackPlayback(targetSong, targetYtUrl, currentTime);
 
         let steps = 50;
         let stepTime = 5000 / steps;
