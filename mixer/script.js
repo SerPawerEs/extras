@@ -859,6 +859,216 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const sharePlaylistBtn = document.getElementById('sharePlaylistBtn');
+    let toastTimeout = null;
+
+    function showToast(message, icon = 'fa-check') {
+        const toast = document.getElementById('toastNotification');
+        if (!toast) return;
+        toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+        toast.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    // Compartir Playlist (Web Share API / Enlace Copiado con datos URL)
+    if (sharePlaylistBtn) {
+        sharePlaylistBtn.addEventListener('click', async () => {
+            if (playlist.length === 0) {
+                showToast("Agrega canciones antes de compartir tu playlist.", "fa-circle-info");
+                return;
+            }
+
+            try {
+                // Minificar lista para generar un enlace ligero
+                const compact = playlist.map(s => ({
+                    t: s.title,
+                    a: s.artist,
+                    u: s.url,
+                    m: s.thumbnail
+                }));
+
+                const encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(compact)))));
+                const shareUrl = `${window.location.origin}${window.location.pathname}?playlist=${encodedData}`;
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'Playlist - Dual Player Music Studio',
+                            text: `¡Te comparto esta playlist con ${playlist.length} canciones!`,
+                            url: shareUrl
+                        });
+                        showToast("¡Playlist compartida exitosamente!", "fa-share-nodes");
+                        return;
+                    } catch(err) {
+                        if (err.name === 'AbortError') return;
+                    }
+                }
+
+                // Fallback: Copiar al portapapeles
+                await navigator.clipboard.writeText(shareUrl);
+                showToast("¡Enlace de playlist copiado al portapapeles!", "fa-link");
+            } catch(e) {
+                console.error("Error al compartir:", e);
+                showToast("No se pudo generar el enlace para compartir.", "fa-triangle-exclamation");
+            }
+        });
+    }
+
+    // Detectar e importar playlist compartida desde la URL al cargar
+    function checkImportSharedPlaylist() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedParam = urlParams.get('playlist');
+            if (!sharedParam) return;
+
+            const jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(sharedParam))));
+            const imported = JSON.parse(jsonStr);
+
+            if (Array.isArray(imported) && imported.length > 0) {
+                const newSongs = imported.map(s => ({
+                    title: s.t || s.title || 'Canción',
+                    artist: s.a || s.artist || 'YouTube Music',
+                    url: s.u || s.url,
+                    thumbnail: s.m || s.thumbnail || `https://img.youtube.com/vi/${extractVideoId(s.u || s.url)}/hqdefault.jpg`
+                }));
+
+                if (playlist.length > 0) {
+                    const shouldMerge = confirm(`Se ha compartido una playlist con ${newSongs.length} canciones.\n¿Deseas agregar estas canciones a tu playlist existente? (Aceptar = Agregar, Cancelar = Reemplazar)`);
+                    if (shouldMerge) {
+                        playlist = [...playlist, ...newSongs];
+                    } else {
+                        playlist = newSongs;
+                    }
+                } else {
+                    playlist = newSongs;
+                }
+
+                savePlaylist();
+                renderPlaylist();
+                openPlaylistDrawer();
+                showToast(`¡Se cargaron ${newSongs.length} canciones compartidas!`, "fa-folder-plus");
+
+                // Limpiar parámetro URL para evitar re-importación al refrescar
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        } catch(e) {
+            console.error("Error al importar playlist:", e);
+        }
+    }
+
+    // Drag & Drop para modificar el orden de la Playlist
+    let draggedItemIndex = null;
+
+    function setupDragAndDrop(card, idx) {
+        card.setAttribute('draggable', 'true');
+
+        // Eventos HTML5 Drag (Desktop)
+        card.addEventListener('dragstart', (e) => {
+            draggedItemIndex = idx;
+            card.classList.add('is-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', idx);
+        });
+
+        card.addEventListener('dragend', () => {
+            card.classList.remove('is-dragging');
+            document.querySelectorAll('.playlist-card').forEach(c => c.classList.remove('drag-over-top', 'drag-over-bottom'));
+            draggedItemIndex = null;
+        });
+
+        card.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (draggedItemIndex === null || draggedItemIndex === idx) return;
+
+            const rect = card.getBoundingClientRect();
+            const relY = e.clientY - rect.top;
+            if (relY < rect.height / 2) {
+                card.classList.add('drag-over-top');
+                card.classList.remove('drag-over-bottom');
+            } else {
+                card.classList.add('drag-over-bottom');
+                card.classList.remove('drag-over-top');
+            }
+        });
+
+        card.addEventListener('dragleave', () => {
+            card.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+
+        card.addEventListener('drop', (e) => {
+            e.preventDefault();
+            card.classList.remove('drag-over-top', 'drag-over-bottom');
+            if (draggedItemIndex === null || draggedItemIndex === idx) return;
+
+            reorderPlaylist(draggedItemIndex, idx);
+            draggedItemIndex = null;
+        });
+
+        // Soporte Touch Drag (Móvil / Pantalla Táctil)
+        const handle = card.querySelector('.drag-handle');
+        if (handle) {
+            handle.addEventListener('touchstart', (e) => {
+                draggedItemIndex = idx;
+                card.classList.add('is-dragging');
+            }, { passive: true });
+
+            handle.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+                const overCard = elem ? elem.closest('.playlist-card') : null;
+
+                document.querySelectorAll('.playlist-card').forEach(c => c.classList.remove('drag-over-top', 'drag-over-bottom'));
+                if (overCard && overCard !== card) {
+                    const rect = overCard.getBoundingClientRect();
+                    if (touch.clientY < rect.top + rect.height / 2) {
+                        overCard.classList.add('drag-over-top');
+                    } else {
+                        overCard.classList.add('drag-over-bottom');
+                    }
+                }
+            }, { passive: true });
+
+            handle.addEventListener('touchend', (e) => {
+                card.classList.remove('is-dragging');
+                const touch = e.changedTouches[0];
+                const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+                const overCard = elem ? elem.closest('.playlist-card') : null;
+                document.querySelectorAll('.playlist-card').forEach(c => c.classList.remove('drag-over-top', 'drag-over-bottom'));
+
+                if (overCard && overCard !== card) {
+                    const targetIdx = parseInt(overCard.dataset.index);
+                    if (!isNaN(targetIdx) && draggedItemIndex !== null && targetIdx !== draggedItemIndex) {
+                        reorderPlaylist(draggedItemIndex, targetIdx);
+                    }
+                }
+                draggedItemIndex = null;
+            });
+        }
+    }
+
+    function reorderPlaylist(fromIdx, toIdx) {
+        if (fromIdx < 0 || fromIdx >= playlist.length || toIdx < 0 || toIdx >= playlist.length) return;
+
+        const currentSong = playlistModeActive && playlist[playlistCurrentIndex] ? playlist[playlistCurrentIndex] : null;
+
+        const [item] = playlist.splice(fromIdx, 1);
+        playlist.splice(toIdx, 0, item);
+
+        // Mantener la sincronización con la canción que está tocando
+        if (currentSong) {
+            const newIdx = playlist.indexOf(currentSong);
+            if (newIdx !== -1) playlistCurrentIndex = newIdx;
+        }
+
+        savePlaylist();
+        renderPlaylist();
+        showToast("Orden de la playlist actualizado", "fa-arrows-up-down");
+    }
+
     function renderPlaylist() {
         if (!playlistCount || !playlistEmpty || !playlistList) return;
         playlistCount.textContent = playlist.length;
@@ -879,7 +1089,10 @@ document.addEventListener('DOMContentLoaded', () => {
             card.dataset.index = idx;
 
             card.innerHTML = `
-                <img src="${song.thumbnail || 'https://via.placeholder.com/46'}" class="playlist-thumb" alt="Carátula">
+                <div class="drag-handle" title="Mantén y arrastra para cambiar el orden">
+                    <i class="fa-solid fa-grip-vertical"></i>
+                </div>
+                <img src="${song.thumbnail || 'https://via.placeholder.com/46'}" class="playlist-thumb" alt="Carátula" draggable="false">
                 <div class="playlist-card-content">
                     <h4 class="playlist-card-title" title="${song.title}">
                         ${isPlayingThis ? '<i class="fa-solid fa-volume-high" style="color:#10b981; margin-right:5px;"></i>' : ''}
@@ -887,10 +1100,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </h4>
                     <p class="playlist-card-artist">${song.artist || 'YouTube Music'}</p>
                     <div class="playlist-deck-actions">
-                        <button class="deck-btn-target left" data-deck="Left" title="Reproducir en Deck Izquierdo">
+                        <button class="deck-btn-target left" data-deck="Left" title="Colocar en Deck Izquierdo (sin reproducir)">
                             <i class="fa-solid fa-arrow-left"></i> Deck Izq
                         </button>
-                        <button class="deck-btn-target right" data-deck="Right" title="Reproducir en Deck Derecho">
+                        <button class="deck-btn-target right" data-deck="Right" title="Colocar en Deck Derecho (sin reproducir)">
                             Deck Der <i class="fa-solid fa-arrow-right"></i>
                         </button>
                     </div>
@@ -900,13 +1113,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             `;
 
-            // Cargar en Deck Izquierdo
+            // Configurar funcionalidad de arrastrar
+            setupDragAndDrop(card, idx);
+
+            // Colocar en Deck Izquierdo (sin reproducir de inmediato)
             card.querySelector('.deck-btn-target.left').addEventListener('click', (e) => {
                 e.stopPropagation();
                 loadSongDirectlyIntoDeck('Left', song);
             });
 
-            // Cargar en Deck Derecho
+            // Colocar en Deck Derecho (sin reproducir de inmediato)
             card.querySelector('.deck-btn-target.right').addEventListener('click', (e) => {
                 e.stopPropagation();
                 loadSongDirectlyIntoDeck('Right', song);
@@ -918,8 +1134,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 removeSongFromPlaylist(idx);
             });
 
-            // Clic en la tarjeta: si modo playlist está activo, salta a esta canción
-            card.addEventListener('click', () => {
+            // Clic en la tarjeta
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('button') || e.target.closest('.drag-handle')) return;
                 if (playlistModeActive) {
                     startPlaylistTrack(idx, currentPlayingDeckSide, false);
                 } else {
@@ -933,6 +1150,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Coloca la canción en el deck sin reproducirla inmediatamente (autoPlay = false)
     function loadSongDirectlyIntoDeck(side, song) {
         if (playlistModeActive) {
             playlistModeToggle.checked = false;
@@ -941,11 +1159,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchInput = document.getElementById(`searchInput${side}`);
         if (searchInput) searchInput.value = song.url;
         const targetDeck = side === 'Left' ? deckLeftInstance : deckRightInstance;
-        targetDeck.initYouTubeWithRetry(song.url, true, 0);
+        
+        // autoPlay = false para colocarla en pausa
+        targetDeck.initYouTubeWithRetry(song.url, false, 0);
+        showToast(`Canción colocada en Deck ${side === 'Left' ? 'Izquierdo' : 'Derecho'} (Pausa)`, side === 'Left' ? 'fa-arrow-left' : 'fa-arrow-right');
     }
 
-    // Inicializar renderizado de playlist guardada
+    // Inicializar renderizado de playlist guardada e importar compartida si existe
     renderPlaylist();
+    checkImportSharedPlaylist();
 
     /* ========================================================
        MOTOR DE REPRODUCCIÓN EN MODO PLAYLIST (TRANSICIONES 5s)
