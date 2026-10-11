@@ -9,7 +9,7 @@ if (window.YT && window.YT.Player) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("v1.3")
+    console.log("v1.4")
     const helpBtn = document.getElementById('helpBtn');
     const helpModal = document.getElementById('helpModal');
     const closeModal = document.getElementById('closeModal');
@@ -175,24 +175,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // --- BUSCADOR YOUTUBE MUSIC CON VERIFICADOR DE ENTER ---
         let searchTimeout = null;
 
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const query = searchInput.value.trim();
                 
-                // Si pega directamente un enlace válido de YouTube
                 if (query.includes('youtube.com') || query.includes('youtu.be') || query.includes('music.youtube.com')) {
                     searchResults.classList.remove('active');
                     initYouTubeWithRetry(query, false, 0);
                     return;
                 }
 
-                // Si no hay texto o la lista de resultados no está activa, no hace nada para evitar bugs
                 if (!query || !searchResults.classList.contains('active')) return;
 
-                // Selecciona y hace clic automáticamente en el primer resultado disponible
                 const firstItem = searchResults.querySelector('.search-item');
                 if (firstItem) {
                     firstItem.click();
@@ -361,7 +357,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (event.data === YT.PlayerState.PLAYING) {
                                 playIcon.classList.replace('fa-play', 'fa-pause');
                                 vinyl.classList.add('spinning');
-                            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                            } else if (event.data === YT.PlayerState.PAUSED) {
+                                playIcon.classList.replace('fa-pause', 'fa-play');
+                                vinyl.classList.remove('spinning');
+                            } else if (event.data === YT.PlayerState.ENDED) {
+                                // Al finalizar el audio (100%), se posiciona en 0s y se frena
+                                event.target.seekTo(0, true);
+                                event.target.pauseVideo();
                                 playIcon.classList.replace('fa-pause', 'fa-play');
                                 vinyl.classList.remove('spinning');
                             }
