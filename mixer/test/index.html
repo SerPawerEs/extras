@@ -60,6 +60,11 @@
             filter: brightness(.9);
         }
 
+        button:disabled {
+            opacity: .5;
+            cursor: wait;
+        }
+
         #estado {
             color: #bbb;
             overflow-wrap: anywhere;
@@ -133,14 +138,14 @@
         <h1>🎵 Buscador de música</h1>
 
         <p>
-            Busca una canción y obtén su enlace directo de YouTube Music.
+            Busca canciones y obtén enlaces directos de YouTube Music.
         </p>
 
         <div class="buscador">
             <input
                 id="busqueda"
                 type="text"
-                placeholder="Ej. Blinding Lights The Weeknd"
+                placeholder="Ej. Mai — Milo J"
             >
             <button id="buscar">Buscar</button>
         </div>
@@ -160,17 +165,25 @@
         const reproductor = document.getElementById("reproductor");
         const titulo = document.getElementById("titulo");
 
-        // Instancias públicas alternativas; ninguna requiere una API key.
+        // Instancias públicas de Invidious.
         const instancias = [
             "https://inv.nadeko.net",
             "https://invidious.nerdvpn.de",
-            "https://invidious.privacydev.net"
+            "https://invidious.privacydev.net",
+            "https://invidious.tiekoetter.com"
         ];
+
+        // Proxy opcional para intentar superar bloqueos CORS.
+        // Es un servicio de terceros, no una solución garantizada.
+        const proxyPublico =
+            "https://api.allorigins.win/raw?url=";
 
         botonBuscar.addEventListener("click", buscar);
 
         busqueda.addEventListener("keydown", event => {
-            if (event.key === "Enter") buscar();
+            if (event.key === "Enter") {
+                buscar();
+            }
         });
 
         async function buscar() {
@@ -209,28 +222,21 @@
                 const videos = await consultarInstancias(texto);
 
                 if (!videos.length) {
-                    estado.textContent = "No se encontraron resultados.";
+                    estado.textContent =
+                        "No se encontraron videos para esa búsqueda.";
                     return;
                 }
 
+                videos.forEach(video => crearTarjeta(video));
+
                 estado.textContent =
-                    `Se encontraron ${videos.length} resultados.`;
-
-                videos.forEach(video => {
-                    if (!video.videoId) return;
-                    crearTarjeta(video);
-                });
-
-                if (!resultados.children.length) {
-                    estado.textContent =
-                        "La búsqueda no devolvió videos válidos.";
-                }
+                    `Se encontraron ${resultados.children.length} resultados.`;
             } catch (error) {
-                console.error(error);
+                console.error("Error de búsqueda:", error);
 
                 estado.textContent =
-                    "No se pudo consultar ninguna instancia pública. " +
-                    "Intenta de nuevo más tarde.";
+                    "No fue posible buscar canciones. Las instancias públicas " +
+                    "o el proxy pueden estar bloqueados o fuera de servicio.";
             } finally {
                 botonBuscar.disabled = false;
             }
@@ -240,43 +246,75 @@
             let ultimoError;
 
             for (const instancia of instancias) {
+                const apiUrl = instancia +
+                    "/api/v1/search?q=" +
+                    encodeURIComponent(texto) +
+                    "&type=video&region=CO";
+
                 try {
-                    const url = instancia +
-                        "/api/v1/search?q=" +
-                        encodeURIComponent(texto) +
-                        "&type=video&region=CO";
+                    // Primero intentamos una petición directa.
+                    const datos = await obtenerJSON(apiUrl);
 
-                    const respuesta = await fetch(url, {
-                        headers: { "Accept": "application/json" }
-                    });
-
-                    if (!respuesta.ok) {
-                        throw new Error("HTTP " + respuesta.status);
+                    if (Array.isArray(datos)) {
+                        return filtrarVideos(datos);
                     }
 
-                    const datos = await respuesta.json();
-
-                    if (!Array.isArray(datos)) {
-                        throw new Error("Respuesta inesperada");
-                    }
-
-                    return datos
-                        .filter(video =>
-                            video.type === "video" &&
-                            /^[\w-]{11}$/.test(video.videoId || "")
-                        )
-                        .slice(0, 20);
-                } catch (error) {
-                    ultimoError = error;
+                    throw new Error("Respuesta inesperada de la instancia.");
+                } catch (errorDirecto) {
                     console.warn(
-                        "Instancia no disponible:",
+                        "Falló la conexión directa:",
                         instancia,
-                        error
+                        errorDirecto
                     );
+
+                    try {
+                        // Si falla, intentamos el proxy público.
+                        const proxyUrl =
+                            proxyPublico + encodeURIComponent(apiUrl);
+
+                        const datos = await obtenerJSON(proxyUrl);
+
+                        if (Array.isArray(datos)) {
+                            return filtrarVideos(datos);
+                        }
+
+                        throw new Error("Respuesta inesperada del proxy.");
+                    } catch (errorProxy) {
+                        ultimoError = errorProxy;
+
+                        console.warn(
+                            "También falló el proxy:",
+                            instancia,
+                            errorProxy
+                        );
+                    }
                 }
             }
 
-            throw ultimoError || new Error("Búsqueda no disponible");
+            throw ultimoError || new Error("No hay instancias disponibles.");
+        }
+
+        async function obtenerJSON(url) {
+            const respuesta = await fetch(url, {
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            if (!respuesta.ok) {
+                throw new Error("HTTP " + respuesta.status);
+            }
+
+            return await respuesta.json();
+        }
+
+        function filtrarVideos(datos) {
+            return datos
+                .filter(video =>
+                    video.type === "video" &&
+                    /^[\w-]{11}$/.test(video.videoId || "")
+                )
+                .slice(0, 20);
         }
 
         function crearTarjeta(video) {
@@ -285,13 +323,13 @@
 
             const nombre = document.createElement("div");
             nombre.className = "nombre";
-            nombre.textContent = video.title || "Canción sin título";
+            nombre.textContent = video.title || "Video sin título";
 
             const artista = document.createElement("div");
             artista.className = "artista";
             artista.textContent = video.author || "Artista desconocido";
 
-            // Este sí es un enlace a un video específico.
+            // URL del video específico, no de una búsqueda.
             const enlaceDirecto =
                 "https://music.youtube.com/watch?v=" +
                 encodeURIComponent(video.videoId);
@@ -301,6 +339,7 @@
 
             const reproducir = document.createElement("button");
             reproducir.textContent = "Reproducir aquí";
+
             reproducir.addEventListener("click", () => {
                 reproducirVideo(video.videoId, video.title);
             });
@@ -308,6 +347,7 @@
             const abrir = document.createElement("button");
             abrir.className = "secundario";
             abrir.textContent = "Abrir YouTube Music";
+
             abrir.addEventListener("click", () => {
                 window.open(
                     enlaceDirecto,
@@ -319,6 +359,7 @@
             const copiar = document.createElement("button");
             copiar.className = "secundario";
             copiar.textContent = "Copiar enlace directo";
+
             copiar.addEventListener("click", async () => {
                 try {
                     await navigator.clipboard.writeText(enlaceDirecto);
@@ -344,11 +385,12 @@
             reproductor.replaceChildren();
 
             const iframe = document.createElement("iframe");
+
             iframe.src =
                 "https://www.youtube-nocookie.com/embed/" +
                 encodeURIComponent(videoId);
 
-            iframe.title = nombre || "Reproductor de música";
+            iframe.title = nombre || "Reproductor de YouTube";
             iframe.allow =
                 "autoplay; encrypted-media; picture-in-picture; fullscreen";
             iframe.allowFullscreen = true;
@@ -356,12 +398,13 @@
             reproductor.appendChild(iframe);
             titulo.textContent = nombre || "Reproductor";
             estado.textContent =
-                "Reproduciendo mediante el reproductor de YouTube, " +
-                "si el video permite reproducción incrustada.";
+                "El video puede reproducirse aquí si permite la inserción.";
         }
 
         function manejarEnlace(url) {
-            const hosts = [
+            const host = url.hostname.toLowerCase();
+
+            const hostsPermitidos = [
                 "youtube.com",
                 "www.youtube.com",
                 "music.youtube.com",
@@ -369,61 +412,71 @@
                 "youtu.be"
             ];
 
-            if (!hosts.includes(url.hostname.toLowerCase())) {
+            resultados.replaceChildren();
+            reproductor.replaceChildren();
+
+            if (!hostsPermitidos.includes(host)) {
                 estado.textContent =
-                    "Pega un enlace válido de YouTube o YouTube Music.";
+                    "Pega un enlace de YouTube o YouTube Music.";
                 return;
             }
 
             const partes = url.pathname.split("/").filter(Boolean);
-            let id = url.searchParams.get("v") || "";
+            let videoId = url.searchParams.get("v") || "";
 
-            if (url.hostname.toLowerCase() === "youtu.be") {
-                id = partes[0] || "";
+            if (host === "youtu.be") {
+                videoId = partes[0] || "";
             } else if (
-                !id &&
+                !videoId &&
                 ["shorts", "embed", "live"].includes(partes[0])
             ) {
-                id = partes[1] || "";
+                videoId = partes[1] || "";
             }
 
-            if (id && /^[\w-]{11}$/.test(id)) {
-                resultados.replaceChildren();
-                reproducirVideo(id, "Video de YouTube");
+            const playlistId = url.searchParams.get("list");
+
+            if (videoId && /^[\w-]{11}$/.test(videoId)) {
+                reproducirVideo(videoId, "Video de YouTube");
                 return;
             }
 
-            if (url.searchParams.get("list")) {
-                const lista = document.createElement("iframe");
-                lista.src =
-                    "https://www.youtube-nocookie.com/embed/videoseries?list=" +
-                    encodeURIComponent(url.searchParams.get("list"));
-                lista.title = "Playlist de YouTube";
-                lista.allowFullscreen = true;
-                lista.allow = "autoplay; encrypted-media; fullscreen";
+            if (playlistId) {
+                const iframe = document.createElement("iframe");
 
-                reproductor.replaceChildren(lista);
+                iframe.src =
+                    "https://www.youtube-nocookie.com/embed/videoseries?list=" +
+                    encodeURIComponent(playlistId);
+
+                iframe.title = "Playlist de YouTube";
+                iframe.allow =
+                    "autoplay; encrypted-media; fullscreen";
+                iframe.allowFullscreen = true;
+
+                reproductor.replaceChildren(iframe);
+                titulo.textContent = "Playlist";
                 estado.textContent = "Playlist cargada.";
                 return;
             }
 
             if (
-                url.hostname.toLowerCase() === "music.youtube.com" &&
+                host === "music.youtube.com" &&
                 url.pathname.startsWith("/search")
             ) {
                 window.open(url.href, "_blank", "noopener,noreferrer");
-                estado.textContent = "Búsqueda abierta en YouTube Music.";
+                estado.textContent =
+                    "Se abrió la búsqueda de YouTube Music.";
                 return;
             }
 
             estado.textContent =
-                "No se pudo identificar el video en ese enlace.";
+                "No se pudo identificar un video en ese enlace.";
         }
 
         function mostrarEnlace(url) {
             busqueda.value = url;
             busqueda.focus();
             busqueda.select();
+
             estado.textContent =
                 "No se pudo copiar automáticamente. Copia el enlace seleccionado.";
         }
