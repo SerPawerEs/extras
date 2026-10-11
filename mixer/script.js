@@ -9,7 +9,7 @@ if (window.YT && window.YT.Player) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("v1.2")
+    console.log("v1.3")
     const helpBtn = document.getElementById('helpBtn');
     const helpModal = document.getElementById('helpModal');
     const closeModal = document.getElementById('closeModal');
@@ -175,19 +175,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // --- BUSCADOR OPTIMIZADO PARA YOUTUBE MUSIC (Vía Piped API) ---
+        // --- BUSCADOR YOUTUBE MUSIC CON VERIFICADOR DE ENTER ---
         let searchTimeout = null;
 
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const query = searchInput.value.trim();
-                searchResults.classList.remove('active');
-                if (query) {
-                    let videoUrl = query;
-                    if (!query.includes('youtube.com') && !query.includes('youtu.be')) {
-                        videoUrl = `https://www.youtube.com/watch?v=${query}`;
-                    }
-                    initYouTubeWithRetry(videoUrl, false, 0);
+                
+                // Si pega directamente un enlace válido de YouTube
+                if (query.includes('youtube.com') || query.includes('youtu.be') || query.includes('music.youtube.com')) {
+                    searchResults.classList.remove('active');
+                    initYouTubeWithRetry(query, false, 0);
+                    return;
+                }
+
+                // Si no hay texto o la lista de resultados no está activa, no hace nada para evitar bugs
+                if (!query || !searchResults.classList.contains('active')) return;
+
+                // Selecciona y hace clic automáticamente en el primer resultado disponible
+                const firstItem = searchResults.querySelector('.search-item');
+                if (firstItem) {
+                    firstItem.click();
                 }
             }
         });
@@ -211,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let ytData = null;
                 for (let api of pipedInstances) {
                     try {
-                        // Usamos filter=music_songs para priorizar contenido de YouTube Music
                         const response = await fetch(`${api}/search?q=${encodeURIComponent(query)}&filter=music_songs`);
                         if (response.ok) {
                             ytData = await response.json();
