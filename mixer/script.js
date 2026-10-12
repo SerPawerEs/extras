@@ -3,7 +3,7 @@ let ytAPIReady = false;
 if (window.YT && window.YT.Player) {
     ytAPIReady = true;
 } else {
-    window.onYouTubeIframeAPIReady = function() {
+    window.onYouTubeIframeAPIReady = function () {
         ytAPIReady = true;
     };
 }
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const trackTitle = document.getElementById(`trackTitle${side}`);
         const trackArtist = document.getElementById(`trackArtist${side}`);
         const vinyl = document.getElementById(`vinyl${side}`);
-        
+
         const back10Btn = document.getElementById(`back10${side}Btn`);
         const fwd10Btn = document.getElementById(`fwd10${side}Btn`);
         const prevBtn = document.getElementById(`prev${side}Btn`);
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const query = searchInput.value.trim();
-                
+
                 if (query.includes('youtube.com') || query.includes('youtu.be') || query.includes('music.youtube.com')) {
                     searchResults.classList.remove('active');
                     initYouTubeWithRetry(query, false, 0);
@@ -638,7 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         const saved = localStorage.getItem('dj_studio_playlist');
         if (saved) playlist = JSON.parse(saved);
-    } catch(e) {
+    } catch (e) {
         playlist = [];
     }
 
@@ -652,7 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function savePlaylist() {
         try {
             localStorage.setItem('dj_studio_playlist', JSON.stringify(playlist));
-        } catch(e) {}
+        } catch (e) { }
     }
 
     // Funciones de apertura / cierre del drawer
@@ -902,7 +902,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                         showToast("¡Playlist compartida exitosamente!", "fa-share-nodes");
                         return;
-                    } catch(err) {
+                    } catch (err) {
                         if (err.name === 'AbortError') return;
                     }
                 }
@@ -910,7 +910,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Fallback: Copiar al portapapeles
                 await navigator.clipboard.writeText(shareUrl);
                 showToast("¡Enlace de playlist copiado al portapapeles!", "fa-link");
-            } catch(e) {
+            } catch (e) {
                 console.error("Error al compartir:", e);
                 showToast("No se pudo generar el enlace para compartir.", "fa-triangle-exclamation");
             }
@@ -951,12 +951,484 @@ document.addEventListener('DOMContentLoaded', () => {
                 openPlaylistDrawer();
                 showToast(`¡Se cargaron ${newSongs.length} canciones compartidas!`, "fa-folder-plus");
 
+                // Auto-guardar con nombre "Lista compartida"
+                autoSaveSharedPlaylist(newSongs);
+
                 // Limpiar parámetro URL para evitar re-importación al refrescar
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
-        } catch(e) {
+        } catch (e) {
             console.error("Error al importar playlist:", e);
         }
+    }
+
+    function autoSaveSharedPlaylist(songs) {
+        try {
+            let savedLists = getSavedLists();
+            const newEntry = {
+                id: Date.now(),
+                name: 'Lista compartida',
+                songs: songs,
+                savedAt: new Date().toISOString()
+            };
+            savedLists.unshift(newEntry);
+            localStorage.setItem('dj_studio_saved_lists', JSON.stringify(savedLists));
+        } catch (e) { console.error('Error auto-guardando lista compartida:', e); }
+    }
+
+    /* ========================================================
+       GUARDAR Y CARGAR LISTAS
+       ======================================================== */
+
+    function getSavedLists() {
+        try {
+            const raw = localStorage.getItem('dj_studio_saved_lists');
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) { return []; }
+    }
+
+    function writeSavedLists(lists) {
+        try {
+            localStorage.setItem('dj_studio_saved_lists', JSON.stringify(lists));
+        } catch (e) { }
+    }
+
+    // --- Botón Guardar Lista ---
+    const savePlaylistBtn = document.getElementById('savePlaylistBtn');
+    const saveListModal   = document.getElementById('saveListModal');
+    const saveListNameInput = document.getElementById('saveListNameInput');
+    const confirmSaveListBtn = document.getElementById('confirmSaveListBtn');
+    const cancelSaveListBtn  = document.getElementById('cancelSaveListBtn');
+    const closeSaveListModal = document.getElementById('closeSaveListModal');
+
+    function openSaveModal() {
+        if (playlist.length === 0) {
+            showToast('Agrega canciones antes de guardar.', 'fa-circle-info');
+            return;
+        }
+        saveListNameInput.value = '';
+        saveListModal.classList.add('active');
+        setTimeout(() => saveListNameInput.focus(), 80);
+    }
+
+    function closeSaveModal() {
+        saveListModal.classList.remove('active');
+    }
+
+    function doSaveList() {
+        const name = saveListNameInput.value.trim() || `Mi lista ${new Date().toLocaleDateString('es')}`;
+        const lists = getSavedLists();
+        lists.unshift({
+            id: Date.now(),
+            name,
+            songs: [...playlist],
+            savedAt: new Date().toISOString()
+        });
+        writeSavedLists(lists);
+        closeSaveModal();
+        showToast(`Lista "${name}" guardada con ${playlist.length} canciones.`, 'fa-floppy-disk');
+    }
+
+    if (savePlaylistBtn) savePlaylistBtn.addEventListener('click', openSaveModal);
+    if (closeSaveListModal) closeSaveListModal.addEventListener('click', closeSaveModal);
+    if (cancelSaveListBtn)  cancelSaveListBtn.addEventListener('click', closeSaveModal);
+    if (confirmSaveListBtn) confirmSaveListBtn.addEventListener('click', doSaveList);
+    if (saveListNameInput) {
+        saveListNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') doSaveList();
+            if (e.key === 'Escape') closeSaveModal();
+        });
+    }
+    if (saveListModal) {
+        saveListModal.addEventListener('click', (e) => {
+            if (e.target === saveListModal) closeSaveModal();
+        });
+    }
+
+    // --- Botón Cargar Lista ---
+    const loadPlaylistBtn    = document.getElementById('loadPlaylistBtn');
+    const loadListModal      = document.getElementById('loadListModal');
+    const closeLoadListModal = document.getElementById('closeLoadListModal');
+    const savedListsContainer = document.getElementById('savedListsContainer');
+
+    function openLoadModal() {
+        renderSavedLists();
+        loadListModal.classList.add('active');
+    }
+
+    function closeLoadModal() {
+        loadListModal.classList.remove('active');
+    }
+
+    function renderSavedLists() {
+        if (!savedListsContainer) return;
+        const lists = getSavedLists();
+        savedListsContainer.innerHTML = '';
+
+        if (lists.length === 0) {
+            savedListsContainer.innerHTML = '<div class="saved-lists-empty"><i class="fa-solid fa-folder-open" style="font-size:1.5rem; margin-bottom:8px; display:block;"></i>No tienes listas guardadas aún.</div>';
+            return;
+        }
+
+        lists.forEach((entry, idx) => {
+            const item = document.createElement('div');
+            item.className = 'saved-list-item';
+
+            const dateStr = new Date(entry.savedAt).toLocaleDateString('es', { day:'2-digit', month:'short', year:'numeric' });
+
+            item.innerHTML = `
+                <div class="saved-list-info">
+                    <span class="saved-list-name">${entry.name}</span>
+                    <span class="saved-list-meta"><i class="fa-solid fa-music"></i> ${entry.songs.length} canciones &middot; ${dateStr}</span>
+                </div>
+                <div class="saved-list-actions">
+                    <button class="saved-list-btn rename" title="Renombrar lista"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="saved-list-btn edit"   title="Editar lista"><i class="fa-solid fa-sliders"></i></button>
+                    <button class="saved-list-btn delete" title="Eliminar lista"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            `;
+
+            // Cargar lista al hacer clic en el área de info
+            item.querySelector('.saved-list-info').addEventListener('click', () => {
+                const shouldMerge = playlist.length > 0
+                    ? confirm(`¿Deseas agregar "${entry.name}" a tu cola actual? (Aceptar = Agregar, Cancelar = Reemplazar)`)
+                    : false;
+                if (shouldMerge) {
+                    playlist = [...playlist, ...entry.songs];
+                } else {
+                    playlist = [...entry.songs];
+                }
+                savePlaylist();
+                renderPlaylist();
+                closeLoadModal();
+                showToast(`Lista "${entry.name}" cargada con ${entry.songs.length} canciones.`, 'fa-folder-open');
+            });
+
+            // Renombrar
+            item.querySelector('.saved-list-btn.rename').addEventListener('click', (e) => {
+                e.stopPropagation();
+                openRenameModal(idx);
+            });
+
+            // Editar
+            item.querySelector('.saved-list-btn.edit').addEventListener('click', (e) => {
+                e.stopPropagation();
+                openEditListModal(idx);
+            });
+
+            // Eliminar
+            item.querySelector('.saved-list-btn.delete').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm(`¿Eliminar la lista "${entry.name}"?`)) {
+                    const updated = getSavedLists().filter((_, i) => i !== idx);
+                    writeSavedLists(updated);
+                    renderSavedLists();
+                    showToast(`Lista "${entry.name}" eliminada.`, 'fa-trash-can');
+                }
+            });
+
+            savedListsContainer.appendChild(item);
+        });
+    }
+
+    if (loadPlaylistBtn)    loadPlaylistBtn.addEventListener('click', openLoadModal);
+    if (closeLoadListModal) closeLoadListModal.addEventListener('click', closeLoadModal);
+    if (loadListModal) {
+        loadListModal.addEventListener('click', (e) => {
+            if (e.target === loadListModal) closeLoadModal();
+        });
+    }
+
+    /* ========================================================
+       RENOMBRAR LISTA
+       ======================================================== */
+
+    const renameListModal     = document.getElementById('renameListModal');
+    const renameListInput     = document.getElementById('renameListInput');
+    const confirmRenameListBtn = document.getElementById('confirmRenameListBtn');
+    const cancelRenameListBtn  = document.getElementById('cancelRenameListBtn');
+    const closeRenameListModal = document.getElementById('closeRenameListModal');
+
+    let renamingListIdx = -1;
+
+    function openRenameModal(idx) {
+        renamingListIdx = idx;
+        const lists = getSavedLists();
+        renameListInput.value = lists[idx]?.name || '';
+        renameListModal.classList.add('active');
+        setTimeout(() => { renameListInput.focus(); renameListInput.select(); }, 80);
+    }
+
+    function closeRenameModal() {
+        renameListModal.classList.remove('active');
+        renamingListIdx = -1;
+    }
+
+    function doRenameList() {
+        if (renamingListIdx < 0) return;
+        const newName = renameListInput.value.trim();
+        if (!newName) { renameListInput.focus(); return; }
+        const lists = getSavedLists();
+        if (!lists[renamingListIdx]) return;
+        lists[renamingListIdx].name = newName;
+        writeSavedLists(lists);
+        closeRenameModal();
+        renderSavedLists();
+        showToast(`Lista renombrada a "${newName}".`, 'fa-pen-to-square');
+    }
+
+    if (confirmRenameListBtn) confirmRenameListBtn.addEventListener('click', doRenameList);
+    if (cancelRenameListBtn)  cancelRenameListBtn.addEventListener('click', closeRenameModal);
+    if (closeRenameListModal) closeRenameListModal.addEventListener('click', closeRenameModal);
+    if (renameListInput) {
+        renameListInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter')  doRenameList();
+            if (e.key === 'Escape') closeRenameModal();
+        });
+    }
+    if (renameListModal) {
+        renameListModal.addEventListener('click', (e) => {
+            if (e.target === renameListModal) closeRenameModal();
+        });
+    }
+
+    /* ========================================================
+       EDITAR LISTA (reordenar, quitar, agregar canciones)
+       ======================================================== */
+
+    const editListModal        = document.getElementById('editListModal');
+    const editListModalTitle   = document.getElementById('editListModalTitle');
+    const editListSongsContainer = document.getElementById('editListSongsContainer');
+    const confirmEditListBtn   = document.getElementById('confirmEditListBtn');
+    const cancelEditListBtn    = document.getElementById('cancelEditListBtn');
+    const closeEditListModal   = document.getElementById('closeEditListModal');
+    const editListSearchInput  = document.getElementById('editListSearchInput');
+    const editListSearchResults = document.getElementById('editListSearchResults');
+
+    let editingListIdx  = -1;
+    let editingSongs    = [];    // copia de trabajo
+    let editDraggedIdx  = null;
+    let editSearchTimeout = null;
+
+    function openEditListModal(idx) {
+        editingListIdx = idx;
+        const lists = getSavedLists();
+        const entry = lists[idx];
+        if (!entry) return;
+
+        editingSongs = entry.songs.map(s => ({ ...s }));
+        editListModalTitle.textContent = entry.name;
+        renderEditSongs();
+
+        if (editListSearchInput) editListSearchInput.value = '';
+        if (editListSearchResults) {
+            editListSearchResults.classList.remove('active');
+            editListSearchResults.innerHTML = '';
+        }
+
+        editListModal.classList.add('active');
+    }
+
+    function closeEditModal() {
+        editListModal.classList.remove('active');
+        editingListIdx = -1;
+        editingSongs = [];
+        editDraggedIdx = null;
+        if (editListSearchResults) {
+            editListSearchResults.classList.remove('active');
+            editListSearchResults.innerHTML = '';
+        }
+    }
+
+    function doSaveEditedList() {
+        if (editingListIdx < 0) return;
+        const lists = getSavedLists();
+        if (!lists[editingListIdx]) return;
+        lists[editingListIdx].songs = [...editingSongs];
+        lists[editingListIdx].savedAt = new Date().toISOString();
+        writeSavedLists(lists);
+        closeEditModal();
+        renderSavedLists();
+        showToast(`Lista editada y guardada con ${editingSongs.length} canciones.`, 'fa-floppy-disk');
+    }
+
+    function renderEditSongs() {
+        if (!editListSongsContainer) return;
+        editListSongsContainer.innerHTML = '';
+
+        if (editingSongs.length === 0) {
+            editListSongsContainer.innerHTML = '<div class="edit-songs-empty"><i class="fa-solid fa-music" style="font-size:1.4rem; margin-bottom:8px; display:block; opacity:0.3;"></i>Sin canciones. Usa la búsqueda para agregar.</div>';
+            return;
+        }
+
+        editingSongs.forEach((song, idx) => {
+            const row = document.createElement('div');
+            row.className = 'edit-song-row';
+            row.setAttribute('draggable', 'true');
+            row.dataset.index = idx;
+
+            row.innerHTML = `
+                <i class="fa-solid fa-grip-vertical" style="color:var(--text-muted); cursor:grab; font-size:0.85rem; flex-shrink:0;"></i>
+                <img class="edit-song-thumb" src="${song.thumbnail || 'https://via.placeholder.com/38'}" draggable="false" alt="">
+                <div class="edit-song-info">
+                    <div class="edit-song-title" title="${song.title}">${song.title}</div>
+                    <div class="edit-song-artist">${song.artist || 'YouTube Music'}</div>
+                </div>
+                <button class="edit-song-remove" title="Quitar de la lista"><i class="fa-solid fa-xmark"></i></button>
+            `;
+
+            // Drag & drop
+            row.addEventListener('dragstart', (e) => {
+                editDraggedIdx = idx;
+                row.classList.add('is-dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            row.addEventListener('dragend', () => {
+                row.classList.remove('is-dragging');
+                document.querySelectorAll('.edit-song-row').forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+                editDraggedIdx = null;
+            });
+            row.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (editDraggedIdx === null || editDraggedIdx === idx) return;
+                document.querySelectorAll('.edit-song-row').forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+                const rect = row.getBoundingClientRect();
+                if (e.clientY < rect.top + rect.height / 2) {
+                    row.classList.add('drag-over-top');
+                } else {
+                    row.classList.add('drag-over-bottom');
+                }
+            });
+            row.addEventListener('dragleave', () => {
+                row.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+            row.addEventListener('drop', (e) => {
+                e.preventDefault();
+                row.classList.remove('drag-over-top', 'drag-over-bottom');
+                if (editDraggedIdx === null || editDraggedIdx === idx) return;
+                const [moved] = editingSongs.splice(editDraggedIdx, 1);
+                const newIdx = editDraggedIdx < idx ? idx - 0 : idx;
+                editingSongs.splice(newIdx, 0, moved);
+                editDraggedIdx = null;
+                renderEditSongs();
+            });
+
+            // Quitar canción
+            row.querySelector('.edit-song-remove').addEventListener('click', () => {
+                editingSongs.splice(idx, 1);
+                renderEditSongs();
+            });
+
+            editListSongsContainer.appendChild(row);
+        });
+    }
+
+    // Búsqueda para agregar canciones al editor
+    if (editListSearchInput) {
+        editListSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const query = editListSearchInput.value.trim();
+                if (isYouTubeUrl(query)) {
+                    const vid = extractVideoId(query);
+                    editingSongs.push({
+                        title: 'Canción de YouTube',
+                        artist: `ID: ${vid}`,
+                        url: query,
+                        thumbnail: `https://img.youtube.com/vi/${vid}/hqdefault.jpg`
+                    });
+                    renderEditSongs();
+                    editListSearchInput.value = '';
+                    editListSearchResults.classList.remove('active');
+                    return;
+                }
+                const first = editListSearchResults.querySelector('.search-item');
+                if (first) first.click();
+            }
+            if (e.key === 'Escape') {
+                editListSearchResults.classList.remove('active');
+            }
+        });
+
+        editListSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            if (!query) { editListSearchResults.classList.remove('active'); editListSearchResults.innerHTML = ''; return; }
+
+            if (isYouTubeUrl(query)) {
+                const vid = extractVideoId(query);
+                editingSongs.push({
+                    title: 'Canción de YouTube',
+                    artist: `ID: ${vid}`,
+                    url: query,
+                    thumbnail: `https://img.youtube.com/vi/${vid}/hqdefault.jpg`
+                });
+                renderEditSongs();
+                editListSearchInput.value = '';
+                editListSearchResults.classList.remove('active');
+                return;
+            }
+
+            clearTimeout(editSearchTimeout);
+            editSearchTimeout = setTimeout(async () => {
+                let ytData = null;
+                for (let api of pipedInstances) {
+                    try {
+                        const res = await fetch(`${api}/search?q=${encodeURIComponent(query)}&filter=music_songs`);
+                        if (res.ok) { ytData = await res.json(); break; }
+                    } catch (_) { continue; }
+                }
+                editListSearchResults.innerHTML = '';
+                if (ytData?.items?.length > 0) {
+                    ytData.items.slice(0, 5).forEach(item => {
+                        const videoId = item.url?.split('v=')[1];
+                        if (!videoId) return;
+                        const urlVideo = `https://www.youtube.com/watch?v=${videoId}`;
+                        const el = document.createElement('div');
+                        el.className = 'search-item';
+                        el.innerHTML = `
+                            <img src="${item.thumbnail}" width="46" height="35" style="border-radius:4px; object-fit:cover; flex-shrink:0;">
+                            <div class="search-item-info" style="margin-left:8px; flex:1; overflow:hidden;">
+                                <h4 style="font-size:0.8rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title}</h4>
+                                <p style="font-size:0.7rem; color:var(--text-muted);">${item.uploaderName || 'YouTube Music'}</p>
+                            </div>
+                            <span style="color:var(--accent); font-size:1rem; padding:0 4px;"><i class="fa-solid fa-plus"></i></span>
+                        `;
+                        el.addEventListener('click', () => {
+                            editingSongs.push({
+                                title: item.title,
+                                artist: item.uploaderName || 'YouTube Music',
+                                url: urlVideo,
+                                thumbnail: item.thumbnail
+                            });
+                            renderEditSongs();
+                            editListSearchInput.value = '';
+                            editListSearchResults.classList.remove('active');
+                            editListSearchResults.innerHTML = '';
+                        });
+                        editListSearchResults.appendChild(el);
+                    });
+                    editListSearchResults.classList.add('active');
+                } else {
+                    editListSearchResults.classList.remove('active');
+                }
+            }, 350);
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (editListSearchInput && editListSearchResults) {
+            if (!editListSearchInput.contains(e.target) && !editListSearchResults.contains(e.target)) {
+                editListSearchResults.classList.remove('active');
+            }
+        }
+    });
+
+    if (confirmEditListBtn) confirmEditListBtn.addEventListener('click', doSaveEditedList);
+    if (cancelEditListBtn)  cancelEditListBtn.addEventListener('click', closeEditModal);
+    if (closeEditListModal) closeEditListModal.addEventListener('click', closeEditModal);
+    if (editListModal) {
+        editListModal.addEventListener('click', (e) => {
+            if (e.target === editListModal) closeEditModal();
+        });
     }
 
     // Drag & Drop para modificar el orden de la Playlist
@@ -1159,7 +1631,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchInput = document.getElementById(`searchInput${side}`);
         if (searchInput) searchInput.value = song.url;
         const targetDeck = side === 'Left' ? deckLeftInstance : deckRightInstance;
-        
+
         // autoPlay = false para colocarla en pausa
         targetDeck.initYouTubeWithRetry(song.url, false, 0);
         showToast(`Canción colocada en Deck ${side === 'Left' ? 'Izquierdo' : 'Derecho'} (Pausa)`, side === 'Left' ? 'fa-arrow-left' : 'fa-arrow-right');
@@ -1421,4 +1893,4 @@ document.addEventListener('DOMContentLoaded', () => {
             if (helpModal) helpModal.classList.remove('active');
         }
     });
-});
+});

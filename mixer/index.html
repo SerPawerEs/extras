@@ -275,10 +275,83 @@
         <div class="playlist-section-header">
             <span><i class="fa-solid fa-list-ul"></i> Cola de Canciones (<span id="playlistCount">0</span>)</span>
             <div class="playlist-header-actions">
-                <button class="playlist-action-btn share" id="sharePlaylistBtn" title="Compartir Playlist"><i
-                        class="fa-solid fa-share-nodes"></i> Compartir</button>
-                <button class="playlist-action-btn clear" id="clearPlaylistBtn" title="Vaciar Playlist"><i
-                        class="fa-solid fa-trash-can"></i> Limpiar</button>
+                <button class="playlist-action-btn share" id="sharePlaylistBtn" title="Compartir Playlist"><i class="fa-solid fa-share-nodes"></i> Compartir</button>
+                <button class="playlist-action-btn save" id="savePlaylistBtn" title="Guardar Lista"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+                <button class="playlist-action-btn load" id="loadPlaylistBtn" title="Cargar Lista Guardada"><i class="fa-solid fa-folder-open"></i> Cargar</button>
+                <button class="playlist-action-btn clear" id="clearPlaylistBtn" title="Vaciar Playlist"><i class="fa-solid fa-trash-can"></i> Limpiar</button>
+            </div>
+        </div>
+
+        <!-- Modal: Guardar Lista -->
+        <div class="drawer-modal-overlay" id="saveListModal">
+            <div class="drawer-modal-box">
+                <div class="drawer-modal-header">
+                    <span><i class="fa-solid fa-floppy-disk"></i> Guardar Lista</span>
+                    <button class="drawer-modal-close" id="closeSaveListModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="drawer-modal-body">
+                    <label for="saveListNameInput">Nombre de la lista:</label>
+                    <input type="text" id="saveListNameInput" class="drawer-modal-input" placeholder="Mi lista favorita..." maxlength="50">
+                </div>
+                <div class="drawer-modal-footer">
+                    <button class="playlist-action-btn save" id="confirmSaveListBtn"><i class="fa-solid fa-check"></i> Guardar</button>
+                    <button class="playlist-action-btn clear" id="cancelSaveListBtn"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Cargar Lista -->
+        <div class="drawer-modal-overlay" id="loadListModal">
+            <div class="drawer-modal-box">
+                <div class="drawer-modal-header">
+                    <span><i class="fa-solid fa-folder-open"></i> Mis Listas Guardadas</span>
+                    <button class="drawer-modal-close" id="closeLoadListModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="drawer-modal-body">
+                    <div id="savedListsContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Renombrar Lista -->
+        <div class="drawer-modal-overlay" id="renameListModal">
+            <div class="drawer-modal-box">
+                <div class="drawer-modal-header">
+                    <span><i class="fa-solid fa-pen-to-square"></i> Renombrar Lista</span>
+                    <button class="drawer-modal-close" id="closeRenameListModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="drawer-modal-body">
+                    <label for="renameListInput">Nuevo nombre:</label>
+                    <input type="text" id="renameListInput" class="drawer-modal-input" placeholder="Nombre de la lista..." maxlength="50">
+                </div>
+                <div class="drawer-modal-footer">
+                    <button class="playlist-action-btn save" id="confirmRenameListBtn"><i class="fa-solid fa-check"></i> Renombrar</button>
+                    <button class="playlist-action-btn clear" id="cancelRenameListBtn"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Editar Lista -->
+        <div class="drawer-modal-overlay" id="editListModal">
+            <div class="drawer-modal-box edit-list-modal-box">
+                <div class="drawer-modal-header">
+                    <span><i class="fa-solid fa-sliders"></i> Editar: <span id="editListModalTitle"></span></span>
+                    <button class="drawer-modal-close" id="closeEditListModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="edit-list-search-wrap">
+                    <div class="search-box" style="margin: 0;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="editListSearchInput" placeholder="Buscar canción o pegar link de YouTube...">
+                    </div>
+                    <div class="search-results" id="editListSearchResults"></div>
+                </div>
+                <div class="drawer-modal-body edit-list-modal-body">
+                    <div id="editListSongsContainer"></div>
+                </div>
+                <div class="drawer-modal-footer">
+                    <button class="playlist-action-btn save" id="confirmEditListBtn"><i class="fa-solid fa-floppy-disk"></i> Guardar cambios</button>
+                    <button class="playlist-action-btn clear" id="cancelEditListBtn"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+                </div>
             </div>
         </div>
 
