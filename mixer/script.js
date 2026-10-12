@@ -873,7 +873,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     }
 
-    // Compartir Playlist (Web Share API / Enlace Copiado con datos URL)
+
+    // Compartir Playlist ultracorta (solo con los IDs de YouTube)
     if (sharePlaylistBtn) {
         sharePlaylistBtn.addEventListener('click', async () => {
             if (playlist.length === 0) {
@@ -882,13 +883,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                // Minificar lista para generar un enlace ligero
-                const compact = playlist.map(s => ({
-                    t: s.title,
-                    a: s.artist,
-                    u: s.url,
-                    m: s.thumbnail
-                }));
+                // Extraer únicamente el ID de YouTube de cada canción
+                const compact = playlist.map(s => extractVideoId(s.url)).filter(Boolean);
 
                 const encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(compact)))));
                 const shareUrl = `${window.location.origin}${window.location.pathname}?playlist=${encodedData}`;
@@ -909,7 +905,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Fallback: Copiar al portapapeles
                 await navigator.clipboard.writeText(shareUrl);
-                showToast("¡Enlace de playlist copiado al portapapeles!", "fa-link");
+                showToast("¡Enlace corto de playlist copiado al portapapeles!", "fa-link");
             } catch (e) {
                 console.error("Error al compartir:", e);
                 showToast("No se pudo generar el enlace para compartir.", "fa-triangle-exclamation");
@@ -917,8 +913,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Detectar e importar playlist compartida desde la URL al cargar
-    function checkImportSharedPlaylist() {
+
+
+    async function checkImportSharedPlaylist() {
         try {
             const urlParams = new URLSearchParams(window.location.search);
             const sharedParam = urlParams.get('playlist');
@@ -928,11 +925,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const imported = JSON.parse(jsonStr);
 
             if (Array.isArray(imported) && imported.length > 0) {
-                const newSongs = imported.map(s => ({
-                    title: s.t || s.title || 'Canción',
-                    artist: s.a || s.artist || 'YouTube Music',
-                    url: s.u || s.url,
-                    thumbnail: s.m || s.thumbnail || `https://img.youtube.com/vi/${extractVideoId(s.u || s.url)}/hqdefault.jpg`
+                showToast("Cargando información de las canciones...", "fa-spinner");
+
+                const newSongs = await Promise.all(imported.map(async (item) => {
+                    const vid = typeof item === 'string' ? item : extractVideoId(item.u || item.url);
+                    
+                    let songData = {
+                        title: 'Canción de YouTube',
+                        artist: 'YouTube Music',
+                        url: `https://www.youtube.com/watch?v=${vid}`,
+                        thumbnail: `https://img.youtube.com/vi/${vid}/hqdefault.jpg`
+                    };
+
+                    // Consultar el endpoint de búsqueda de Piped usando el ID exacto del video
+                    for (let api of pipedInstances) {
+                        try {
+                            const response = await fetch(`${api}/search?q=${vid}&filter=music_songs`);
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data && data.items && data.items.length > 0) {
+                                    // Tomamos el primer resultado que coincide con el ID
+                                    const match = data.items.find(i => i.url && i.url.includes(vid)) || data.items[0];
+                                    if (match) {
+                                        songData.title = match.title;
+                                        songData.artist = match.uploaderName || 'YouTube Music';
+                                        if (match.thumbnail) {
+                                            songData.thumbnail = match.thumbnail;
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        } catch (err) {
+                            continue;
+                        }
+                    }
+                    return songData;
                 }));
 
                 if (playlist.length > 0) {
@@ -949,18 +977,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 savePlaylist();
                 renderPlaylist();
                 openPlaylistDrawer();
-                showToast(`¡Se cargaron ${newSongs.length} canciones compartidas!`, "fa-folder-plus");
+                showToast(`¡Se cargaron ${newSongs.length} canciones correctamente!`, "fa-folder-plus");
 
-                // Auto-guardar con nombre "Lista compartida"
                 autoSaveSharedPlaylist(newSongs);
-
-                // Limpiar parámetro URL para evitar re-importación al refrescar
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         } catch (e) {
             console.error("Error al importar playlist:", e);
+            showToast("Error al procesar la playlist compartida.", "fa-triangle-exclamation");
         }
     }
+
+
 
     function autoSaveSharedPlaylist(songs) {
         try {
