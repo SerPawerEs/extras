@@ -300,20 +300,27 @@
         .hero-grid {
             display: grid;
             grid-template-columns: 1.2fr 0.8fr;
-            gap: 3rem;
+            gap: 3.5rem;
             align-items: center;
+        }
+
+        .hero-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
         }
 
         .hero-tag {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.35rem 0.85rem;
+            padding: 0.4rem 1.1rem;
             border-radius: 9999px;
             background: rgba(0, 240, 255, 0.08);
             border: 1px solid rgba(0, 240, 255, 0.25);
             color: var(--color-cyan);
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-family: monospace;
             text-transform: uppercase;
             letter-spacing: 0.1em;
@@ -335,6 +342,7 @@
             line-height: 1.05;
             text-transform: uppercase;
             margin-bottom: 1.5rem;
+            text-align: center;
         }
 
         .hero-description {
@@ -343,6 +351,9 @@
             line-height: 1.7;
             margin-bottom: 2rem;
             max-width: 36rem;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
             font-weight: 300;
         }
 
@@ -350,7 +361,8 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
-            margin-bottom: 2rem;
+            margin: 0 auto 2.25rem auto;
+            width: 100%;
             max-width: 34rem;
         }
 
@@ -377,8 +389,22 @@
 
         .hero-actions {
             display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            width: 100%;
             flex-wrap: wrap;
-            gap: 1rem;
+        }
+
+        .hero-actions .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 14rem;
+            height: 3.25rem;
+            padding: 0 1.5rem;
+            text-align: center;
+            box-sizing: border-box;
         }
 
         /* HERO IMAGE FRAME */
@@ -615,7 +641,7 @@
            ========================================================================== */
         .renders-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 1.5rem;
         }
 
@@ -974,8 +1000,8 @@
            11. FOOTER & LIGHTBOX MODAL
            ========================================================================== */
         .footer {
-            padding-top: 3rem;
-            padding-bottom: 3rem;
+            padding-top: 3.5rem;
+            padding-bottom: 3.5rem;
             border-top: 1px solid var(--border-cyan);
             background: #020617;
             position: relative;
@@ -984,18 +1010,36 @@
 
         .footer-inner {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: space-between;
-            gap: 1.5rem;
-            flex-wrap: wrap;
+            justify-content: center;
+            text-align: center;
+            gap: 1.25rem;
         }
 
         .footer-authors {
             display: flex;
-            gap: 1rem;
-            font-size: 0.75rem;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            font-size: 0.78rem;
             font-family: monospace;
             color: var(--text-muted);
+        }
+
+        .footer-authors span {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .footer-authors span:not(:last-child)::after {
+            content: "•";
+            position: absolute;
+            right: -0.9rem;
+            color: var(--color-cyan);
+            opacity: 0.5;
         }
 
         /* LIGHTBOX MODAL STYLES */
@@ -1163,7 +1207,7 @@
         <div class="container">
             <div class="hero-grid">
                 <!-- Left Content -->
-                <div>
+                <div class="hero-content">
                     <div class="hero-tag">
                         <span class="ping-dot"></span>
                         Ingeniería & Arquitectura Futurista
@@ -1409,7 +1453,20 @@
                     </div>
                 </div>
 
-                <!-- Render 2 -->
+                <!-- Render: Planta Baja -->
+                <div class="glass-panel glass-panel-hover render-card" onclick="openLightbox('input_file_7.png', 'Modelado 3D - Vista de Planta Piso 1 (Garaje, Sala, Comedor, Cocina)')">
+                    <div class="render-img-box">
+                        <img src="input_file_7.png" alt="Modelado Piso 1" onerror="this.src='https://placehold.co/600x600/020617/00f0ff?text=Render+Planta+Baja'">
+                        <div class="render-overlay"></div>
+                        <div class="glass-panel render-badge">VOLUMETRÍA 3D PISO 1</div>
+                        <div class="render-content">
+                            <h3 class="render-title">Distribución 3D Planta Baja</h3>
+                            <p class="render-desc">Garaje independiente, sala social, comedor y cocina con isla.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Render 2: Planta Alta -->
                 <div class="glass-panel glass-panel-hover render-card" onclick="openLightbox('input_file_5.png', 'Modelado 3D - Vista de Planta Piso 2 (Habitaciones y Piscina)')">
                     <div class="render-img-box">
                         <img src="input_file_5.png" alt="Modelado Piso 2" onerror="this.src='https://placehold.co/600x600/020617/00f0ff?text=Render+2'">
@@ -1422,15 +1479,15 @@
                     </div>
                 </div>
 
-                <!-- Render 3 -->
+                <!-- Render 3: Isometría -->
                 <div class="glass-panel glass-panel-hover render-card" onclick="openLightbox('input_file_6.png', 'Modelado 3D SketchUp - Vista Perspectiva Isométrica')">
                     <div class="render-img-box">
                         <img src="input_file_6.png" alt="Modelado Isométrico" onerror="this.src='https://placehold.co/600x600/020617/00f0ff?text=Render+3'">
                         <div class="render-overlay"></div>
                         <div class="glass-panel render-badge">ISOMETRÍA EN SKETCHUP</div>
                         <div class="render-content">
-                            <h3 class="render-title">Distribución 3D Planta Baja</h3>
-                            <p class="render-desc">Garaje interior, sala principal, comedor y cocina con isla.</p>
+                            <h3 class="render-title">Distribución 3D Isométrica</h3>
+                            <p class="render-desc">Volumetría axonométrica completa del proyecto modelada en SketchUp.</p>
                         </div>
                     </div>
                 </div>
@@ -1826,16 +1883,12 @@
     <!-- FOOTER -->
     <footer class="footer">
         <div class="container footer-inner">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <div class="logo-box" style="width: 2rem; height: 2rem;">
-                    <div class="logo-box-inner" style="font-size: 0.75rem;">CM</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.75rem;">
+                <div class="logo-box" style="width: 2.25rem; height: 2.25rem;">
+                    <div class="logo-box-inner" style="font-size: 0.8rem;">CM</div>
                 </div>
-                <span class="logo-text" style="font-size: 0.95rem;">CASA MODERNA</span>
+                <span class="logo-text" style="font-size: 1.05rem;">CASA MODERNA</span>
             </div>
-
-            <p style="font-size: 0.75rem; font-family: monospace; color: var(--text-dark);">
-                © 2026 Casa Moderna. Proyecto de Dibujo Técnico e Ingeniería Civil.
-            </p>
 
             <div class="footer-authors">
                 <span>Isaac A.</span>
@@ -1844,6 +1897,10 @@
                 <span>Samuel M.</span>
                 <span>Sergio P.</span>
             </div>
+
+            <p style="font-size: 0.75rem; font-family: monospace; color: var(--text-dark); margin: 0; text-align: center;">
+                © 2026 Casa Moderna. Proyecto de Dibujo Técnico e Ingeniería Civil.
+            </p>
         </div>
     </footer>
 
