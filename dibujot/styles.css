@@ -3,6 +3,9 @@ body {
     color: #f1f5f9;
     font-family: 'Inter', sans-serif;
     overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 /* Glassmorphism Styles */
@@ -11,6 +14,8 @@ body {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(56, 189, 248, 0.15);
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .glass-panel-hover {
@@ -67,27 +72,19 @@ body {
     animation: scanline 8s linear infinite;
 }
 
-/* ==========================================================
-   CORRECCIÓN RESPONSIVE PARA DISPOSITIVOS MÓVILES
-   ========================================================== */
+/* Corrección forzada para evitar amontonamiento en celulares */
 @media (max-width: 768px) {
-    /* Evita que los paneles de vidrio se desborden o colapsen */
-    .glass-panel {
+    .max-w-7xl, .max-w-3xl, .max-w-lg {
         width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        box-sizing: border-box !important;
     }
-
-    /* Asegura que los grids principales se apilen verticalmente en móviles */
-    section .grid {
+    
+    /* Forzar que las grillas se apilen verticalmente en móviles de baja potencia */
+    div[class*="grid-cols-"] {
         display: flex !important;
         flex-direction: column !important;
         width: 100% !important;
-    }
-
-    /* Ajuste de márgenes y contenedores generales en pantallas estrechas */
-    body {
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
     }
 }
