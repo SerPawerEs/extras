@@ -67,10 +67,27 @@ body {
     animation: scanline 8s linear infinite;
 }
 
-/* Corrección de despliegue inicial en dispositivos móviles */
+/* ==========================================================
+   CORRECCIÓN RESPONSIVE PARA DISPOSITIVOS MÓVILES
+   ========================================================== */
 @media (max-width: 768px) {
+    /* Evita que los paneles de vidrio se desborden o colapsen */
     .glass-panel {
-        max-width: 100%;
+        width: 100% !important;
+        max-width: 100% !important;
         box-sizing: border-box;
+    }
+
+    /* Asegura que los grids principales se apilen verticalmente en móviles */
+    section .grid {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+
+    /* Ajuste de márgenes y contenedores generales en pantallas estrechas */
+    body {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
     }
 }
