@@ -16,6 +16,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- Tailwind Config Customization -->
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -42,76 +43,8 @@
         }
     </script>
 
-    <style>
-        body {
-            background-color: #030712;
-            color: #f1f5f9;
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-        }
-
-        /* Glassmorphism Styles */
-        .glass-panel {
-            background: rgba(10, 15, 29, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(56, 189, 248, 0.15);
-        }
-
-        .glass-panel-hover {
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .glass-panel-hover:hover {
-            border-color: rgba(0, 240, 255, 0.5);
-            transform: translateY(-4px);
-            box-shadow: 0 10px 40px -10px rgba(0, 240, 255, 0.2);
-        }
-
-        /* Neon Glow Effects */
-        .glow-cyan {
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
-        }
-        .text-glow {
-            text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
-        }
-
-        /* Text Gradients */
-        .text-gradient-cyan {
-            background: linear-gradient(135deg, #ffffff 0%, #38bdf8 50%, #00f0ff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Grid Pattern Background */
-        .bg-grid-tech {
-            background-image: linear-gradient(to right, rgba(56, 189, 248, 0.05) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
-            background-size: 50px 50px;
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #030712;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #00f0ff;
-        }
-
-        @keyframes scanline {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(1000%); }
-        }
-        .animate-scan {
-            animation: scanline 8s linear infinite;
-        }
-    </style>
+    <!-- External CSS -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-tech-deep text-slate-200 antialiased selection:bg-tech-cyan selection:text-black bg-grid-tech">
 
@@ -780,7 +713,7 @@
                     </div>
                     <h3 class="font-tech font-bold text-lg text-white mb-2">Cimentación & Vigas</h3>
                     <p class="text-xs text-slate-400 leading-relaxed">
-                        Zapatas de concreto reforzado bajo columnas acopladas con vigas de cimentación y amarre para trasladar cargas eficientemente.
+                        Zapatas de concreto reinforced bajo columnas acopladas con vigas de cimentación y amarre para trasladar cargas eficientemente.
                     </p>
                 </div>
 
@@ -831,7 +764,7 @@
             </div>
 
             <p class="text-xs text-slate-500 font-mono">
-                © 2026 Casa Moderna. Proyecto de Dibujo Técnico e Ingeniería Civil.
+                © 2026 Casa Moderna. Proyecto de Dibujo Técnico e Ingeniería Civil. || v1.0.0
             </p>
 
             <div class="flex gap-4 text-xs font-mono text-slate-400">
@@ -860,70 +793,7 @@
         </div>
     </div>
 
-    <!-- INTERACTIVE JAVASCRIPT -->
-    <script>
-        // Initialize Lucide Icons
-        lucide.createIcons();
-
-        // Lightbox Functions
-        function openLightbox(src, caption) {
-            const lightbox = document.getElementById('lightbox');
-            const img = document.getElementById('lightbox-img');
-            const cap = document.getElementById('lightbox-caption');
-            
-            img.src = src;
-            cap.innerText = caption;
-            
-            lightbox.classList.remove('hidden');
-            setTimeout(() => {
-                lightbox.classList.remove('opacity-0');
-            }, 10);
-        }
-
-        function closeLightbox() {
-            const lightbox = document.getElementById('lightbox');
-            lightbox.classList.add('opacity-0');
-            setTimeout(() => {
-                lightbox.classList.add('hidden');
-            }, 300);
-        }
-
-        // Financial Tabs Switcher
-        function switchFinTab(tab) {
-            const cronoBtn = document.getElementById('fin-tab-crono');
-            const nomBtn = document.getElementById('fin-tab-nom');
-            const cronoContent = document.getElementById('fin-content-cronograma');
-            const nomContent = document.getElementById('fin-content-nomina');
-
-            if (tab === 'cronograma') {
-                cronoBtn.className = "px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider bg-tech-cyan text-black font-bold";
-                nomBtn.className = "px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white";
-                cronoContent.classList.remove('hidden');
-                nomContent.classList.add('hidden');
-            } else {
-                nomBtn.className = "px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider bg-tech-cyan text-black font-bold";
-                cronoBtn.className = "px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white";
-                nomContent.classList.remove('hidden');
-                cronoContent.classList.add('hidden');
-            }
-        }
-
-        // Calculator Interactive Slider Logic
-        function updateCalculator(val) {
-            const baseCost = 2125000000;
-            const price = parseFloat(val);
-            const profit = price - baseCost;
-            const roi = ((profit / baseCost) * 100).toFixed(2);
-
-            document.getElementById('range-val').innerText = '$' + (price / 1000000).toLocaleString() + 'M';
-            document.getElementById('calc-profit').innerText = '$' + profit.toLocaleString('es-CO');
-            document.getElementById('calc-roi').innerText = roi + '%';
-        }
-
-        // ESC Key to close lightbox
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeLightbox();
-        });
-    </script>
+    <!-- External JavaScript -->
+    <script src="script.js"></script>
 </body>
 </html>
