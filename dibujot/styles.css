@@ -66,3 +66,11 @@ body {
 .animate-scan {
     animation: scanline 8s linear infinite;
 }
+
+/* Corrección de despliegue inicial en dispositivos móviles */
+@media (max-width: 768px) {
+    .glass-panel {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+}
