@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASA MODERNA | Dibujo Técnico</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Space Grotesk & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        tech: {
+                            deep: '#030712',
+                            bg: '#0a0f1d',
+                            card: 'rgba(15, 23, 42, 0.75)',
+                            border: 'rgba(56, 189, 248, 0.15)',
+                            cyan: '#00f0ff',
+                            electric: '#38bdf8',
+                            blue: '#2563eb',
+                            glow: 'rgba(0, 240, 255, 0.25)'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        tech: ['Space Grotesk', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #030712;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(10, 15, 29, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+        }
+
+        .glass-panel-hover {
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-panel-hover:hover {
+            border-color: rgba(0, 240, 255, 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px -10px rgba(0, 240, 255, 0.2);
+        }
+
+        /* Neon Glow Effects */
+        .glow-cyan {
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+        }
+        .text-glow {
+            text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+        }
+
+        /* Text Gradients */
+        .text-gradient-cyan {
+            background: linear-gradient(135deg, #ffffff 0%, #38bdf8 50%, #00f0ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Grid Pattern Background */
+        .bg-grid-tech {
+            background-image: linear-gradient(to right, rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #030712;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(1000%); }
+        }
+        .animate-scan {
+            animation: scanline 8s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-tech-deep text-slate-200 antialiased selection:bg-tech-cyan selection:text-black bg-grid-tech">
+
+    <!-- Ambient Glowing Orbs -->
+    <div class="fixed top-0 left-1/4 w-[500px] h-[500px] bg-tech-blue/10 rounded-full blur-[150px] pointer-events-none z-0"></div>
+    <div class="fixed top-1/2 right-10 w-[600px] h-[600px] bg-tech-cyan/10 rounded-full blur-[180px] pointer-events-none z-0"></div>
+
+    <!-- MAIN NAVBAR -->
+    <header class="fixed top-0 left-0 right-0 z-50 py-4 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-panel rounded-2xl px-6 py-3 flex items-center justify-between shadow-2xl">
+                <!-- Logo -->
+                <a href="#hero" class="flex items-center gap-3 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-tech-blue to-tech-cyan p-0.5 group-hover:scale-105 transition">
+                        <div class="w-full h-full bg-tech-deep rounded-[10px] flex items-center justify-center font-tech font-bold text-tech-cyan text-sm">
+                            CM
+                        </div>
+                    </div>
+                    <span class="font-tech font-bold text-lg tracking-wider text-white group-hover:text-tech-cyan transition">CASA MODERNA</span>
+                </a>
+
+                <!-- Desktop Navigation -->
+                <nav class="hidden lg:flex items-center gap-6 text-xs font-medium uppercase tracking-widest text-slate-400">
+                    <a href="#hero" class="hover:text-tech-cyan transition">Inicio</a>
+                    <a href="#equipo" class="hover:text-tech-cyan transition">Equipo</a>
+                    <a href="#planos" class="hover:text-tech-cyan transition">Planos Arq.</a>
+                    <a href="#modelado" class="hover:text-tech-cyan transition">Modelado 3D</a>
+                    <a href="#finanzas" class="hover:text-tech-cyan transition">Finanzas</a>
+                    <a href="#marketing" class="hover:text-tech-cyan transition">Marketing</a>
+                    <a href="#ingenieria" class="hover:text-tech-cyan transition">Ingeniería Civil</a>
+                </nav>
+
+                <!-- Action CTA -->
+                <a href="https://app.sketchup.com/share/tc/northAmerica/jaUAL0Ad-Mc?source=web&stoken=1pcpWRzWEKaUZTZ_Vasf3iaJ-JdOE_Ub8vjeosubFSMqY6H4tUYbSfzNRepWMndi" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 text-tech-cyan text-xs font-tech font-semibold tracking-wider hover:bg-tech-cyan hover:text-black transition duration-300 shadow-[0_0_20px_rgba(0,240,255,0.2)]">
+                    <i data-lucide="compass" class="w-4 h-4"></i> Explorar Proyecto
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- SECTION 1: HERO -->
+    <section id="hero" class="relative min-h-screen pt-32 pb-20 flex items-center justify-center z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <!-- Hero Left Content -->
+                <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tech-cyan/10 border border-tech-cyan/30 text-tech-cyan text-xs font-mono tracking-widest uppercase">
+                        <span class="w-2 h-2 rounded-full bg-tech-cyan animate-ping"></span>
+                        Ingeniería & Arquitectura Futurista
+                    </div>
+
+                    <h1 class="font-tech text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-none uppercase">
+                        CASA <span class="text-gradient-cyan text-glow">MODERNA</span>
+                    </h1>
+
+                    <p class="text-slate-300 text-base sm:text-lg max-w-2xl leading-relaxed font-light">
+                        Una experiencia de vida de alto standing en <strong class="text-white font-medium">Villa Campestre, Puerto Colombia</strong>.
+                        Lujo, confort bioclimático, terrazas privadas con piscina e ingeniería de precisión integradas en un diseño arquitectónico de vanguardia.
+                    </p>
+
+                    <!-- Tech Specs Row -->
+                    <div class="grid grid-cols-3 gap-4 pt-4 max-w-lg mx-auto lg:mx-0">
+                        <div class="glass-panel p-3 rounded-xl text-center">
+                            <span class="block text-xs font-mono text-slate-400">ÁREA LOTE</span>
+                            <span class="font-tech text-lg font-bold text-tech-cyan">150 m²</span>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl text-center">
+                            <span class="block text-xs font-mono text-slate-400">ALTURA LIBRE</span>
+                            <span class="font-tech text-lg font-bold text-tech-cyan">6.20 m</span>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl text-center">
+                            <span class="block text-xs font-mono text-slate-400">NIVELES</span>
+                            <span class="font-tech text-lg font-bold text-tech-cyan">2 Pisos</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+                        <a href="#planos" class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-tech-blue to-tech-cyan text-black font-tech font-bold text-xs uppercase tracking-wider hover:opacity-90 transition shadow-lg shadow-tech-cyan/20 flex items-center gap-2">
+                            <i data-lucide="layers" class="w-4 h-4"></i> Ver Planos Técnicos
+                        </a>
+                        <a href="#modelado" class="px-6 py-3.5 rounded-xl glass-panel text-white font-tech font-medium text-xs uppercase tracking-wider hover:border-tech-cyan transition flex items-center gap-2">
+                            <i data-lucide="box" class="w-4 h-4 text-tech-cyan"></i> Renders 3D
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Hero Right Image Frame -->
+                <div class="lg:col-span-5 relative">
+                    <div class="relative group rounded-3xl overflow-hidden glass-panel p-2 shadow-2xl border-tech-cyan/30">
+                        <div class="relative rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[16/10] lg:aspect-[4/5] bg-slate-900 cursor-pointer" onclick="openLightbox('input_file_4.png', 'Render Fachada Principal - Vista Exterior Casa Moderna')">
+                            <img src="input_file_4.png" alt="Casa Moderna Exterior" class="w-full h-full object-cover transform group-hover:scale-105 transition duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-tech-deep via-transparent to-transparent opacity-80"></div>
+                            
+                            <div class="absolute top-4 right-4 glass-panel px-3 py-1 rounded-full text-[10px] font-mono text-tech-cyan border-tech-cyan/40 flex items-center gap-1">
+                                <i data-lucide="maximize-2" class="w-3 h-3"></i> Ampliar Render
+                            </div>
+
+                            <div class="absolute bottom-6 left-6 right-6 p-4 glass-panel rounded-xl">
+                                <p class="text-[10px] text-tech-cyan font-mono font-semibold uppercase tracking-wider">Proyecto Final — Villa Campestre</p>
+                                <p class="text-sm font-tech font-bold text-white">Fachada Principal & Acceso Vehicular</p>
+                                <p class="text-xs text-slate-400">Diseño arquitectónico contemporáneo</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: EQUIPO DE TRABAJO -->
+    <section id="equipo" class="py-20 relative z-10 border-t border-tech-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-tech-cyan font-mono text-xs font-semibold uppercase tracking-widest block mb-2">// Liderazgo Técnico</span>
+                <h2 class="font-tech text-3xl sm:text-4xl font-extrabold text-white uppercase tracking-tight">Equipo de Desarrollo & Diseño</h2>
+                <p class="text-slate-400 text-sm mt-2">Ingenieros y proyectistas al frente de la concepción de Casa Moderna.</p>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                <!-- Member 1 -->
+                <div class="glass-panel p-5 rounded-2xl text-center glass-panel-hover" onclick="window.location.href = '#finanzas'">
+                    <div class="w-12 h-12 mx-auto rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan font-tech font-bold text-lg mb-3">
+                        IA
+                    </div>
+                    <h3 class="font-tech font-bold text-white text-sm">Isaac Ariza</h3>
+                    <p class="text-[11px] font-mono text-slate-400 mt-0.5">Presupuesto & Costos</p>
+                </div>
+
+                <!-- Member 2 -->
+                <div class="glass-panel p-5 rounded-2xl text-center glass-panel-hover" onclick="window.location.href = '#planos'">
+                    <div class="w-12 h-12 mx-auto rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan font-tech font-bold text-lg mb-3">
+                        DH
+                    </div>
+                    <h3 class="font-tech font-bold text-white text-sm">Derek Higgins</h3>
+                    <p class="text-[11px] font-mono text-slate-400 mt-0.5">Dibujo Técnico & Planos</p>
+                </div>
+
+                <!-- Member 3 -->
+                <div class="glass-panel p-5 rounded-2xl text-center glass-panel-hover" onclick="window.location.href = '#marketing'">
+                    <div class="w-12 h-12 mx-auto rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan font-tech font-bold text-lg mb-3">
+                        AM
+                    </div>
+                    <h3 class="font-tech font-bold text-white text-sm">Angel Macias</h3>
+                    <p class="text-[11px] font-mono text-slate-400 mt-0.5">Marketing</p>
+                </div>
+
+                <!-- Member 4 -->
+                <div class="glass-panel p-5 rounded-2xl text-center glass-panel-hover" onclick="window.location.href = '#ingenieria'">
+                    <div class="w-12 h-12 mx-auto rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan font-tech font-bold text-lg mb-3">
+                        SM
+                    </div>
+                    <h3 class="font-tech font-bold text-white text-sm">Samuel Mendoza</h3>
+                    <p class="text-[11px] font-mono text-slate-400 mt-0.5">Ingeniería Civil</p>
+                </div>
+
+                <!-- Member 5 -->
+                <div class="glass-panel p-5 rounded-2xl text-center glass-panel-hover col-span-2 sm:col-span-1" onclick="window.location.href = '#modelado'">
+                    <div class="w-12 h-12 mx-auto rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan font-tech font-bold text-lg mb-3">
+                        SP
+                    </div>
+                    <h3 class="font-tech font-bold text-white text-sm">Sergio Pallares</h3>
+                    <p class="text-[11px] font-mono text-slate-400 mt-0.5">Modelado 3D & Renders</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: PLANOS ARQUITECTÓNICOS -->
+    <section id="planos" class="py-24 relative z-10 border-t border-tech-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-tech-cyan font-mono text-xs font-semibold uppercase tracking-widest block mb-2">// Especificaciones Técnicas Escala 1:50</span>
+                <h2 class="font-tech text-3xl sm:text-4xl font-extrabold text-white uppercase tracking-tight">Planos Arquitectónicos Originales</h2>
+                <p class="text-slate-400 text-sm mt-2">Levantamiento plano a escala con distribución de cotas y ejes de cimentación.</p>
+            </div>
+
+            <!-- Blueprint Gallery Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Plano 1: Primer Piso -->
+                <div class="glass-panel p-4 rounded-3xl border-tech-border glass-panel-hover flex flex-col justify-between">
+                    <div>
+                        <div class="relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-950 mb-4 cursor-pointer group" onclick="openLightbox('input_file_0.png', 'Plano Arquitectónico - Primer Piso (Garaje, Sala, Comedor, Cocina)')">
+                            <img src="input_file_0.png" alt="Plano Primer Piso" class="w-full h-full object-contain p-2 group-hover:scale-105 transition duration-500">
+                            <div class="absolute inset-0 bg-tech-cyan/5 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                <span class="glass-panel px-4 py-2 rounded-xl text-xs font-mono text-tech-cyan flex items-center gap-2">
+                                    <i data-lucide="zoom-in" class="w-4 h-4"></i> Inspeccionar Plano
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono text-tech-cyan bg-tech-cyan/10 px-2.5 py-1 rounded-md border border-tech-cyan/20">PLANTA BAJA — PISO 1</span>
+                            <span class="text-xs font-mono text-slate-400">Escala 1:50</span>
+                        </div>
+                        <h3 class="font-tech font-bold text-white text-lg mt-2">Distribución Social & Servicio</h3>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                            Incluye garaje independiente, zona de sala principal, comedor, cocina integrada con isla, patio interior y escalera de acceso a segundo nivel.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Plano 2: Segundo Piso -->
+                <div class="glass-panel p-4 rounded-3xl border-tech-border glass-panel-hover flex flex-col justify-between">
+                    <div>
+                        <div class="relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-950 mb-4 cursor-pointer group" onclick="openLightbox('input_file_1.png', 'Plano Arquitectónico - Segundo Piso (Habitaciones, Baños, Balcón, Piscina)')">
+                            <img src="input_file_1.png" alt="Plano Segundo Piso" class="w-full h-full object-contain p-2 group-hover:scale-105 transition duration-500">
+                            <div class="absolute inset-0 bg-tech-cyan/5 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                <span class="glass-panel px-4 py-2 rounded-xl text-xs font-mono text-tech-cyan flex items-center gap-2">
+                                    <i data-lucide="zoom-in" class="w-4 h-4"></i> Inspeccionar Plano
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono text-tech-cyan bg-tech-cyan/10 px-2.5 py-1 rounded-md border border-tech-cyan/20">PLANTA ALTA — PISO 2</span>
+                            <span class="text-xs font-mono text-slate-400">Escala 1:50</span>
+                        </div>
+                        <h3 class="font-tech font-bold text-white text-lg mt-2">Zona Privada & Piscina Superior</h3>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                            Distribución de Habitación 1 y Habitación 2, dos baños completos, área de balcón exterior y piscina privada elevada.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Plano 3: Fachada -->
+                <div class="glass-panel p-4 rounded-3xl border-tech-border glass-panel-hover flex flex-col justify-between">
+                    <div>
+                        <div class="relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-950 mb-4 cursor-pointer group" onclick="openLightbox('input_file_2.png', 'Plano Arquitectónico - Elevación Frontal / Fachada')">
+                            <img src="input_file_2.png" alt="Plano Fachada" class="w-full h-full object-contain p-2 group-hover:scale-105 transition duration-500">
+                            <div class="absolute inset-0 bg-tech-cyan/5 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                <span class="glass-panel px-4 py-2 rounded-xl text-xs font-mono text-tech-cyan flex items-center gap-2">
+                                    <i data-lucide="zoom-in" class="w-4 h-4"></i> Inspeccionar Plano
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono text-tech-cyan bg-tech-cyan/10 px-2.5 py-1 rounded-md border border-tech-cyan/20">ELEVACIÓN FRONTAL</span>
+                            <span class="text-xs font-mono text-slate-400">Escala 1:50</span>
+                        </div>
+                        <h3 class="font-tech font-bold text-white text-lg mt-2">Fachada Principal & Altura Libre</h3>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                            Diseño de elevación frontal con portón de acceso vehicular, ventanas panorámicas y terrazas del piso superior.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Plano 4: Cortes / Estructura -->
+                <div class="glass-panel p-4 rounded-3xl border-tech-border glass-panel-hover flex flex-col justify-between">
+                    <div>
+                        <div class="relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-950 mb-4 cursor-pointer group" onclick="openLightbox('input_file_3.png', 'Plano Arquitectónico - Cortes Estructurales y Perfiles')">
+                            <img src="input_file_3.png" alt="Plano Cortes Estructurales" class="w-full h-full object-contain p-2 group-hover:scale-105 transition duration-500">
+                            <div class="absolute inset-0 bg-tech-cyan/5 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                <span class="glass-panel px-4 py-2 rounded-xl text-xs font-mono text-tech-cyan flex items-center gap-2">
+                                    <i data-lucide="zoom-in" class="w-4 h-4"></i> Inspeccionar Plano
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono text-tech-cyan bg-tech-cyan/10 px-2.5 py-1 rounded-md border border-tech-cyan/20">CORTE Y ELEVACIÓN</span>
+                            <span class="text-xs font-mono text-slate-400">Escala 1:50</span>
+                        </div>
+                        <h3 class="font-tech font-bold text-white text-lg mt-2">Perfil Lateral & Altura Estructural</h3>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                            Corte longitudinal indicando losas, columnas de soporte y alturas por nivel de 3.10 metros (6.20 metros en total).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: MODELADO 3D -->
+    <section id="modelado" class="py-24 relative z-10 border-t border-tech-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-16">
+                <div>
+                    <span class="text-tech-cyan font-mono text-xs font-semibold uppercase tracking-widest block mb-2">// Modelado CAD & Renders</span>
+                    <h2 class="font-tech text-3xl sm:text-4xl font-extrabold text-white uppercase tracking-tight">Modelado 3D & Renders Digitales</h2>
+                </div>
+                <p class="text-slate-400 text-sm max-w-md mt-4 md:mt-0">
+                    Visualización fotorrealista y volumétrica de espacios interiore y exteriores.
+                </p>
+            </div>
+
+            <!-- 3D Render Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Render 1 -->
+                <div class="glass-panel rounded-3xl overflow-hidden glass-panel-hover group cursor-pointer" onclick="openLightbox('input_file_4.png', 'Render Fotográfico - Fachada Exterior Final')">
+                    <div class="aspect-square bg-slate-950 relative overflow-hidden">
+                        <img src="input_file_4.png" alt="Render Exterior Casa Moderna" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-tech-deep via-transparent to-transparent opacity-90"></div>
+                        <div class="absolute top-4 left-4 glass-panel px-2.5 py-1 rounded-lg text-[10px] font-mono text-tech-cyan">RENDER FOTOGRÁFICO</div>
+                        <div class="absolute bottom-6 left-6 right-6">
+                            <h3 class="text-lg font-tech font-bold text-white">Vista Exterior Realista</h3>
+                            <p class="text-xs text-slate-300 mt-1">Integración de fachada moderna en esquina de Villa Campestre.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Render 2 -->
+                <div class="glass-panel rounded-3xl overflow-hidden glass-panel-hover group cursor-pointer" onclick="openLightbox('input_file_5.png', 'Modelado 3D - Vista de Planta Piso 2 (Habitaciones y Piscina)')">
+                    <div class="aspect-square bg-slate-950 relative overflow-hidden">
+                        <img src="input_file_5.png" alt="Modelado 3D Piso 2" class="w-full h-full object-contain p-4 group-hover:scale-105 transition duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-tech-deep via-transparent to-transparent opacity-90"></div>
+                        <div class="absolute top-4 left-4 glass-panel px-2.5 py-1 rounded-lg text-[10px] font-mono text-tech-cyan">VOLUMETRÍA 3D PISO 2</div>
+                        <div class="absolute bottom-6 left-6 right-6">
+                            <h3 class="text-lg font-tech font-bold text-white">Distribución 3D Planta Alta</h3>
+                            <p class="text-xs text-slate-300 mt-1">Piscina privada integrada, dormitorios y terraza exterior.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Render 3 -->
+                <div class="glass-panel rounded-3xl overflow-hidden glass-panel-hover group cursor-pointer" onclick="openLightbox('input_file_6.png', 'Modelado 3D SketchUp - Vista Perspectiva Isometrica')">
+                    <div class="aspect-square bg-slate-950 relative overflow-hidden">
+                        <img src="input_file_6.png" alt="Modelado Isométrico 3D" class="w-full h-full object-contain p-4 group-hover:scale-105 transition duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-tech-deep via-transparent to-transparent opacity-90"></div>
+                        <div class="absolute top-4 left-4 glass-panel px-2.5 py-1 rounded-lg text-[10px] font-mono text-tech-cyan">ISOMETRÍA EN SKETCHUP</div>
+                        <div class="absolute bottom-6 left-6 right-6">
+                            <h3 class="text-lg font-tech font-bold text-white">Distribución 3D Planta Baja</h3>
+                            <p class="text-xs text-slate-300 mt-1">Garaje interior, sala principal, comedor y cocina con isla.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: FINANZAS & PRESUPUESTO -->
+    <section id="finanzas" class="py-24 relative z-10 border-t border-tech-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-tech-cyan font-mono text-xs font-semibold uppercase tracking-widest block mb-2">// Análisis de Inversión</span>
+                <h2 class="font-tech text-3xl sm:text-4xl font-extrabold text-white uppercase tracking-tight">Presupuesto & Flujo Financiero</h2>
+                <p class="text-slate-400 text-sm mt-2">Proyección presupuestal detallada para la ejecución del proyecto.</p>
+            </div>
+
+            <!-- Investment Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div class="glass-panel p-6 rounded-2xl border-tech-border">
+                    <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider block mb-1">Costo Estimado Lote</span>
+                    <span class="text-2xl font-tech font-bold text-white">$650.000.000</span>
+                    <span class="text-[10px] font-mono text-tech-cyan block mt-2">Villa Campestre (150m²)</span>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl border-tech-border">
+                    <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider block mb-1">Costo de Construcción</span>
+                    <span class="text-2xl font-tech font-bold text-white">$1.250.000.000</span>
+                    <span class="text-[10px] font-mono text-tech-cyan block mt-2">Materiales & Ejecución</span>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl border-tech-border">
+                    <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider block mb-1">Estudios y Licencias</span>
+                    <span class="text-2xl font-tech font-bold text-white">$100.000.000</span>
+                    <span class="text-[10px] font-mono text-tech-cyan block mt-2">Permisos & Planos</span>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl border-tech-border bg-gradient-to-br from-tech-blue/20 to-tech-cyan/10">
+                    <span class="text-[11px] font-mono text-tech-cyan uppercase tracking-wider block mb-1">Inversión Estimada Total</span>
+                    <span class="text-2xl font-tech font-bold text-tech-cyan">~$2.445.000.000</span>
+                    <span class="text-[10px] font-mono text-slate-300 block mt-2">COP (Incluye contingencia)</span>
+                </div>
+            </div>
+
+            <!-- Base Budget & Financial Dashboard Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+                <!-- Budget Table -->
+                <div class="lg:col-span-8 glass-panel p-6 sm:p-8 rounded-3xl border-tech-border">
+                    <h3 class="font-tech text-xl font-bold text-white mb-6 flex items-center justify-between">
+                        <span>Estructura Base del Presupuesto</span>
+                        <span class="text-xs font-mono text-tech-cyan bg-tech-cyan/10 px-3 py-1 rounded-full">COP</span>
+                    </h3>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs sm:text-sm">
+                            <thead>
+                                <tr class="border-b border-tech-border text-slate-400 font-mono uppercase text-[11px]">
+                                    <th class="pb-3">Rubro de Inversión</th>
+                                    <th class="pb-3 text-right">Monto Estimado</th>
+                                    <th class="pb-3 pl-4">Detalle / Notas</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5 text-slate-300">
+                                <tr>
+                                    <td class="py-3 font-semibold text-white">Adquisición Terreno</td>
+                                    <td class="py-3 text-right font-mono text-tech-cyan">$650.000.000</td>
+                                    <td class="py-3 pl-4 text-xs text-slate-400">Predio en Villa Campestre</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-3 font-semibold text-white">Obra Civil & Estructura</td>
+                                    <td class="py-3 text-right font-mono text-tech-cyan">$1.250.000.000</td>
+                                    <td class="py-3 pl-4 text-xs text-slate-400">Estructura, acabados y piscina</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-3 font-semibold text-white">Diseños, Licencias y Supervisión</td>
+                                    <td class="py-3 text-right font-mono text-tech-cyan">$100.000.000</td>
+                                    <td class="py-3 pl-4 text-xs text-slate-400">Trámites y cálculo estructural</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-3 font-semibold text-white">Imprevistos & Contingencias (10%)</td>
+                                    <td class="py-3 text-right font-mono text-tech-cyan">$125.000.000</td>
+                                    <td class="py-3 pl-4 text-xs text-slate-400">Reserva técnica de seguridad</td>
+                                </tr>
+                                <tr class="border-t border-tech-cyan/30 font-bold">
+                                    <td class="py-4 text-white">SUBTOTAL PROYECTO</td>
+                                    <td class="py-4 text-right font-mono text-tech-cyan text-base">$2.125.000.000</td>
+                                    <td class="py-4 pl-4 text-xs text-slate-400">Costo Directo Base</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ROI Calculator Widget -->
+                <div class="lg:col-span-4 glass-panel p-6 sm:p-8 rounded-3xl border-tech-border flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-4">
+                            <i data-lucide="calculator" class="w-5 h-5 text-tech-cyan"></i>
+                            <h3 class="font-tech font-bold text-lg text-white">Simulador Valor Comercial</h3>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-6">Calcula la rentabilidad ajustando el valor comercial estimado en el mercado.</p>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-xs text-slate-300 block mb-1">Precio Venta Objetivo (COP):</label>
+                                <input type="range" id="price-range" min="1800000000" max="3000000000" step="50000000" value="2445000000" class="w-full accent-tech-cyan cursor-pointer" oninput="updateCalculator(this.value)">
+                                <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+                                    <span>$1.800M</span>
+                                    <span id="range-val" class="text-tech-cyan font-bold">$2.445M</span>
+                                    <span>$3.000M</span>
+                                </div>
+                            </div>
+
+                            <div class="p-4 rounded-xl bg-slate-950/80 border border-tech-border space-y-2">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-400">Costo Base Obra:</span>
+                                    <span class="text-white font-mono">$2.125.000.000</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-400">Ganancia Bruta:</span>
+                                    <span id="calc-profit" class="text-emerald-400 font-mono font-bold">$320.000.000</span>
+                                </div>
+                                <div class="flex justify-between text-xs pt-2 border-t border-white/10">
+                                    <span class="text-slate-400">Margen Estimado:</span>
+                                    <span id="calc-roi" class="text-tech-cyan font-bold font-mono">15.06%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-[10px] text-slate-500 text-center mt-6">*Valoración según proyección comercial inmobiliaria.</p>
+                </div>
+            </div>
+
+            <!-- Payroll & Payment Timeline Tabs -->
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl border-tech-border">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <h3 class="font-tech text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="clock" class="w-5 h-5 text-tech-cyan"></i> Cronograma de Flujo de Caja & Nómina ($320M Mano de Obra)
+                    </h3>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="switchFinTab('cronograma')" id="fin-tab-crono" class="px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider bg-tech-cyan text-black font-bold">Cronograma (12 Meses)</button>
+                        <button onclick="switchFinTab('nomina')" id="fin-tab-nom" class="px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white">Nómina Técnica (12 Cargos)</button>
+                    </div>
+                </div>
+
+                <!-- Cronograma Content -->
+                <div id="fin-content-cronograma" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 rounded-xl bg-slate-950/60 border border-tech-border">
+                        <span class="text-[10px] font-mono text-tech-cyan uppercase">Meses 1 - 2</span>
+                        <h4 class="font-bold text-white text-sm my-1">Cimentación & Descapote</h4>
+                        <p class="text-xs text-slate-400">Pago mensual: $24.915.572</p>
+                        <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+                            <div class="bg-tech-cyan h-1.5 rounded-full" style="width: 15.6%"></div>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-500 mt-1 block">Acumulado: $49.831.144 (15.6%)</span>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-slate-950/60 border border-tech-border">
+                        <span class="text-[10px] font-mono text-tech-cyan uppercase">Meses 3 - 5</span>
+                        <h4 class="font-bold text-white text-sm my-1">Estructura & Mampostería</h4>
+                        <p class="text-xs text-slate-400">Pago mensual: $29.018.136</p>
+                        <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+                            <div class="bg-tech-cyan h-1.5 rounded-full" style="width: 42.8%"></div>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-500 mt-1 block">Acumulado: $136.885.553 (42.8%)</span>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-slate-950/60 border border-tech-border">
+                        <span class="text-[10px] font-mono text-tech-cyan uppercase">Meses 6 - 8</span>
+                        <h4 class="font-bold text-white text-sm my-1">Redes e Impermeabilización</h4>
+                        <p class="text-xs text-slate-400">Pago mensual: $31.019.387</p>
+                        <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+                            <div class="bg-tech-cyan h-1.5 rounded-full" style="width: 71.9%"></div>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-500 mt-1 block">Acumulado: $229.943.715 (71.9%)</span>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-slate-950/60 border border-tech-border">
+                        <span class="text-[10px] font-mono text-tech-cyan uppercase">Meses 9 - 10</span>
+                        <h4 class="font-bold text-white text-sm my-1">Pisos, Enchapes & Acabados</h4>
+                        <p class="text-xs text-slate-400">Pago mensual: $28.017.511</p>
+                        <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+                            <div class="bg-tech-cyan h-1.5 rounded-full" style="width: 89.4%"></div>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-500 mt-1 block">Acumulado: $285.978.737 (89.4%)</span>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-slate-950/60 border border-tech-border md:col-span-2">
+                        <span class="text-[10px] font-mono text-tech-cyan uppercase">Meses 11 - 12</span>
+                        <h4 class="font-bold text-white text-sm my-1">Pintura, Equipamiento & Entrega Final</h4>
+                        <p class="text-xs text-slate-400">Pago mensual: $17.010.632</p>
+                        <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+                            <div class="bg-tech-cyan h-1.5 rounded-full" style="width: 100%"></div>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-500 mt-1 block">Acumulado Total: $320.000.000 (100%)</span>
+                    </div>
+                </div>
+
+                <!-- Nomina Content -->
+                <div id="fin-content-nomina" class="hidden overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-tech-border text-slate-400 font-mono uppercase text-[11px]">
+                                <th class="pb-3">Cargo Especializado</th>
+                                <th class="pb-3 text-center">Cantidad</th>
+                                <th class="pb-3 text-right">Costo Mensual Un.</th>
+                                <th class="pb-3 text-right">Subtotal Mensual</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 text-slate-300">
+                            <tr>
+                                <td class="py-2.5 font-medium text-white">Maestro de Obra Principal</td>
+                                <td class="py-2.5 text-center font-mono">1</td>
+                                <td class="py-2.5 text-right font-mono">$6.100.000</td>
+                                <td class="py-2.5 text-right font-mono text-tech-cyan">$6.100.000</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 font-medium text-white">Oficial de Construcción / Albañil</td>
+                                <td class="py-2.5 text-center font-mono">2</td>
+                                <td class="py-2.5 text-right font-mono">$4.600.000</td>
+                                <td class="py-2.5 text-right font-mono text-tech-cyan">$9.200.000</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 font-medium text-white">Ayudantes de Obra</td>
+                                <td class="py-2.5 text-center font-mono">3</td>
+                                <td class="py-2.5 text-right font-mono">$3.200.000</td>
+                                <td class="py-2.5 text-right font-mono text-tech-cyan">$9.600.000</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 font-medium text-white">Electricistas & Plomeros</td>
+                                <td class="py-2.5 text-center font-mono">2</td>
+                                <td class="py-2.5 text-right font-mono">$4.800.000</td>
+                                <td class="py-2.5 text-right font-mono text-tech-cyan">$9.600.000</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 font-medium text-white">Técnico Piscina e Impermeabilización</td>
+                                <td class="py-2.5 text-center font-mono">1</td>
+                                <td class="py-2.5 text-right font-mono">$5.000.000</td>
+                                <td class="py-2.5 text-right font-mono text-tech-cyan">$5.000.000</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 font-medium text-white">Ingeniero Residente / Inspector</td>
+                                <td class="py-2.5 text-center font-mono">1</td>
+                                <td class="py-2.5 text-right font-mono">$7.000.000</td>
+                                <td class="py-2.5 text-right font-mono text-tech-cyan">$7.000.000</td>
+                            </tr>
+                            <tr class="font-bold border-t border-tech-cyan/40">
+                                <td class="py-3 text-white">TOTAL NÓMINA MES (12 Profesionales)</td>
+                                <td class="py-3 text-center font-mono text-tech-cyan">12</td>
+                                <td class="py-3 text-right" colspan="2"><span class="font-mono text-tech-cyan text-base">$55.100.000 / mes</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 6: MARKETING -->
+    <section id="marketing" class="py-24 relative z-10 border-t border-tech-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-tech-cyan font-mono text-xs font-semibold uppercase tracking-widest block mb-2">// Estrategia Comercial</span>
+                <h2 class="font-tech text-3xl sm:text-4xl font-extrabold text-white uppercase tracking-tight">Estrategia en Tres Pasos</h2>
+                <p class="text-slate-400 text-sm mt-2">Comercialización centrada en el estilo de vida premium en el Caribe colombiano.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="glass-panel p-8 rounded-3xl border-tech-border relative glass-panel-hover">
+                    <span class="text-5xl font-tech font-bold text-tech-cyan/20 absolute top-6 right-6">01</span>
+                    <div class="w-12 h-12 rounded-2xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan mb-6">
+                        <i data-lucide="share-2" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-tech font-bold text-xl text-white mb-3">1. Redes Sociales</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Instagram, TikTok y Facebook con fotografías de calidad arquitectónica y videos inmersivos de los mejores espacios.
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="glass-panel p-8 rounded-3xl border-tech-border relative glass-panel-hover">
+                    <span class="text-5xl font-tech font-bold text-tech-cyan/20 absolute top-6 right-6">02</span>
+                    <div class="w-12 h-12 rounded-2xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan mb-6">
+                        <i data-lucide="target" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-tech font-bold text-xl text-white mb-3">2. Publicidad Dirigida</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Anuncios segmentados para personas interesadas en comprar vivienda en Villa Campestre y sectores exclusivos aledaños.
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="glass-panel p-8 rounded-3xl border-tech-border relative glass-panel-hover">
+                    <span class="text-5xl font-tech font-bold text-tech-cyan/20 absolute top-6 right-6">03</span>
+                    <div class="w-12 h-12 rounded-2xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan mb-6">
+                        <i data-lucide="eye" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-tech font-bold text-xl text-white mb-3">3. Visitas Inmersivas</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Recorridos guiados para que los compradores conozcan de cerca la piscina privada, acabados y confort térmico.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 7: INGENIERÍA CIVIL -->
+    <section id="ingenieria" class="py-24 relative z-10 border-t border-tech-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-tech-cyan font-mono text-xs font-semibold uppercase tracking-widest block mb-2">// Proceso de Construcción</span>
+                <h2 class="font-tech text-3xl sm:text-4xl font-extrabold text-white uppercase tracking-tight">Ingeniería Civil & Desarrollo de Obra</h2>
+                <p class="text-slate-400 text-sm mt-2">Adaptación geotécnica y diseño estructural para el ambiente del Caribe.</p>
+            </div>
+
+            <!-- Engineering Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                <!-- Terreno -->
+                <div class="glass-panel p-6 rounded-2xl border-tech-border">
+                    <div class="w-10 h-10 rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan mb-4">
+                        <i data-lucide="map-pin" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-tech font-bold text-lg text-white mb-2">Terreno & Vivienda</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Ubicación en Villa Campestre, Atlántico. Lote de 10 m de frente por 15 m de fondo (150 m²). Dos pisos con altura libre de 3,10 m por nivel (6,20 m en total).
+                    </p>
+                </div>
+
+                <!-- Excavación -->
+                <div class="glass-panel p-6 rounded-2xl border-tech-border">
+                    <div class="w-10 h-10 rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan mb-4">
+                        <i data-lucide="shovel" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-tech font-bold text-lg text-white mb-2">Preparación & Excavación</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Limpieza y retiro de capa vegetal (150 m² × 0,15 m = <strong class="text-white">22,5 m³</strong>). Trazado de ejes, nivelación y zanjas definidas por estudio de suelos.
+                    </p>
+                </div>
+
+                <!-- Cimentación -->
+                <div class="glass-panel p-6 rounded-2xl border-tech-border">
+                    <div class="w-10 h-10 rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan mb-4">
+                        <i data-lucide="building-2" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-tech font-bold text-lg text-white mb-2">Cimentación & Vigas</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Zapatas de concreto reforzado bajo columnas acopladas con vigas de cimentación y amarre para trasladar cargas eficientemente.
+                    </p>
+                </div>
+
+                <!-- Materiales -->
+                <div class="glass-panel p-6 rounded-2xl border-tech-border">
+                    <div class="w-10 h-10 rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan mb-4">
+                        <i data-lucide="box" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-tech font-bold text-lg text-white mb-2">Materiales Insumos</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Concreto, acero de refuerzo, bloques, cemento, PVC hidráulico, cableado eléctrico, impermeabilizantes técnicos, puertas y ventanería.
+                    </p>
+                </div>
+
+                <!-- Maquinaria -->
+                <div class="glass-panel p-6 rounded-2xl border-tech-border">
+                    <div class="w-10 h-10 rounded-xl bg-tech-cyan/10 border border-tech-cyan/30 flex items-center justify-center text-tech-cyan mb-4">
+                        <i data-lucide="truck" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-tech font-bold text-lg text-white mb-2">Maquinaria & Equipo</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Uso de retroexcavadora, volquetas de transporte, compactadora, formaletas metálicas y equipos de nivelación óptica/láser.
+                    </p>
+                </div>
+
+                <!-- Conclusión -->
+                <div class="glass-panel p-6 rounded-2xl border-tech-border bg-gradient-to-br from-tech-blue/20 to-tech-cyan/5">
+                    <div class="w-10 h-10 rounded-xl bg-tech-cyan/20 border border-tech-cyan/40 flex items-center justify-center text-tech-cyan mb-4">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-tech font-bold text-lg text-white mb-2">Criterio Final</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        El estudio riguroso del suelo y las soluciones de drenaje pluvial garantizan la durabilidad estructural de Casa Moderna en el clima costero.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-12 border-t border-tech-border relative z-10 bg-slate-950">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-tech-cyan flex items-center justify-center text-black font-tech font-bold text-sm">
+                    CM
+                </div>
+                <span class="font-tech font-bold text-sm text-white tracking-widest">CASA MODERNA</span>
+            </div>
+
+            <p class="text-xs text-slate-500 font-mono">
+                © 2026 Casa Moderna. Proyecto de Dibujo Técnico e Ingeniería Civil.
+            </p>
+
+            <div class="flex gap-4 text-xs font-mono text-slate-400">
+                <span>Isaac A.</span>
+                <span>Derek H.</span>
+                <span>Angel M.</span>
+                <span>Samuel M.</span>
+                <span>Sergio P.</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- LIGHTBOX MODAL -->
+    <div id="lightbox" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4" onclick="closeLightbox()">
+        <div class="relative max-w-5xl w-full glass-panel p-4 rounded-3xl border-tech-cyan/40" onclick="event.stopPropagation()">
+            <button onclick="closeLightbox()" class="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-tech-cyan text-black font-bold flex items-center justify-center shadow-lg hover:scale-110 transition z-20">
+                ✕
+            </button>
+            <div class="relative rounded-2xl overflow-hidden bg-slate-950 aspect-[4/3] flex items-center justify-center">
+                <img id="lightbox-img" src="" alt="Modal Image" class="max-h-[80vh] w-auto object-contain">
+            </div>
+            <div class="mt-4 flex items-center justify-between px-2">
+                <p id="lightbox-caption" class="text-sm font-tech font-semibold text-white"></p>
+                <span class="text-xs font-mono text-tech-cyan">Visor de Imagen HD</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- INTERACTIVE JAVASCRIPT -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Lightbox Functions
+        function openLightbox(src, caption) {
+            const lightbox = document.getElementById('lightbox');
+            const img = document.getElementById('lightbox-img');
+            const cap = document.getElementById('lightbox-caption');
+            
+            img.src = src;
+            cap.innerText = caption;
+            
+            lightbox.classList.remove('hidden');
+            setTimeout(() => {
+                lightbox.classList.remove('opacity-0');
+            }, 10);
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.add('opacity-0');
+            setTimeout(() => {
+                lightbox.classList.add('hidden');
+            }, 300);
+        }
+
+        // Financial Tabs Switcher
+        function switchFinTab(tab) {
+            const cronoBtn = document.getElementById('fin-tab-crono');
+            const nomBtn = document.getElementById('fin-tab-nom');
+            const cronoContent = document.getElementById('fin-content-cronograma');
+            const nomContent = document.getElementById('fin-content-nomina');
+
+            if (tab === 'cronograma') {
+                cronoBtn.className = "px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider bg-tech-cyan text-black font-bold";
+                nomBtn.className = "px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white";
+                cronoContent.classList.remove('hidden');
+                nomContent.classList.add('hidden');
+            } else {
+                nomBtn.className = "px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider bg-tech-cyan text-black font-bold";
+                cronoBtn.className = "px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white";
+                nomContent.classList.remove('hidden');
+                cronoContent.classList.add('hidden');
+            }
+        }
+
+        // Calculator Interactive Slider Logic
+        function updateCalculator(val) {
+            const baseCost = 2125000000;
+            const price = parseFloat(val);
+            const profit = price - baseCost;
+            const roi = ((profit / baseCost) * 100).toFixed(2);
+
+            document.getElementById('range-val').innerText = '$' + (price / 1000000).toLocaleString() + 'M';
+            document.getElementById('calc-profit').innerText = '$' + profit.toLocaleString('es-CO');
+            document.getElementById('calc-roi').innerText = roi + '%';
+        }
+
+        // ESC Key to close lightbox
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeLightbox();
+        });
+    </script>
+</body>
+</html>
