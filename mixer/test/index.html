@@ -717,9 +717,12 @@
         let currentUser = localStorage.getItem('ytm_username') || 'User';
 
         const pipedInstances = [
-            'https://pipedapi.kavin.rocks',
+            'https://pipedapi.leptons.xyz',
+            'https://pipedapi.nosebs.ru',
             'https://api.piped.private.coffee',
-            'https://pipedapi.mha.fi'
+            'https://pipedapi.adminforge.de',
+            'https://piped-api.privacy.com.de',
+            'https://api.piped.yt'
         ];
 
         // Playlists guardadas por el usuario
@@ -773,7 +776,12 @@
 
         window.onYouTubeIframeAPIReady = function () {
             ytAPIReady = true;
-            console.log("YouTube API Ready.");
+            console.log('YouTube API Ready.');
+            if (pendingPlaybackSong) {
+                const song = pendingPlaybackSong;
+                pendingPlaybackSong = null;
+                playSongDirectly(song);
+            }
         };
 
         /* ========================================================
@@ -860,67 +868,152 @@
             loader.classList.remove('hidden');
             container.innerHTML = '';
 
-            let topSongs = [];
-            const searchQueries = ['top songs 2026 global', 'trending music hits 2026', 'top music charts'];
+            try {
+                // Apple publica un feed RSS de canciones más escuchadas por storefront.
+                let feed = null;
+                let entries = [];
+                const chartUrls = [
+                    'https://rss.marketingtools.apple.com/api/v2/co/music/most-played/50/songs.json',
+                    'https://itunes.apple.com/co/rss/topsongs/limit=50/json'
+                ];
 
-            for (let api of pipedInstances) {
-                for (let query of searchQueries) {
+                for (const chartUrl of chartUrls) {
                     try {
-                        const res = await fetch(`${api}/search?q=${encodeURIComponent(query)}&filter=music_songs`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            if (data.items && data.items.length > 0) {
-                                const songs = data.items
-                                    .filter(item => item.type === 'music_song' || item.type === 'stream' || !item.type)
-                                    .map((item, idx) => {
-                                        const vid = item.url ? item.url.split('v=')[1] : '';
-                                        const cleanTitle = item.title
-                                            .replace(/\(Official Video\)/gi, '')
-                                            .replace(/\[Official Music Video\]/gi, '')
-                                            .replace(/\(Audio\)/gi, '')
-                                            .replace(/\(Lyric Video\)/gi, '')
-                                            .trim();
-                                        return {
-                                            id: vid,
-                                            title: cleanTitle,
-                                            artist: item.uploaderName || 'Top Music Artist',
-                                            thumbnail: item.thumbnail || `https://img.youtube.com/vi/${vid}/hqdefault.jpg`
-                                        };
-                                    })
-                                    .filter(s => s.id);
-
-                                songs.forEach(s => {
-                                    if (!topSongs.some(existing => existing.id === s.id)) {
-                                        topSongs.push(s);
-                                    }
-                                });
-
-                                if (topSongs.length >= 12) break;
-                            }
-                        }
-                    } catch (e) { continue; }
+                        const response = await fetch(chartUrl, { cache: 'no-store' });
+                        if (!response.ok) continue;
+                        feed = await response.json();
+                        entries = feed?.feed?.results || feed?.feed?.entry || [];
+                        if (entries.length) break;
+                    } catch (error) {
+                        // Prueba el feed alternativo.
+                    }
                 }
-                if (topSongs.length >= 12) break;
+                if (!entries.length) throw new Error('Apple Music no devolvió canciones.');
+
+                const chartEntries = entries.map((entry, index) => {
+                    const legacyImages = entry['im:image'] || [];
+                    const title = entry.name || entry['im:name']?.label || '';
+                    const artist = entry.artistName || entry['im:artist']?.label || 'Artista desconocido';
+                    const artworkTemplate = entry.artwork?.url || '';
+                    const appleArtwork = artworkTemplate
+                        ? artworkTemplate.replace('{w}', '400').replace('{h}', '400').replace('{f}', 'jpg')
+                        : '';
+                    const thumbnail = entry.artworkUrl100 || appleArtwork ||
+                        (legacyImages.length ? legacyImages[legacyImages.length - 1].label : '');
+                    const appleUrl = entry.url || entry.link?.attributes?.href || '';
+                    return { title, artist, thumbnail, appleUrl, rank: index + 1 };
+                }).filter(song => song.title);
+
+                // El RSS aporta el ranking real. Piped solo se usa para encontrar
+                // el ID reproducible de YouTube, nunca para decidir el orden del top.
+                const resolved = await resolveChartVideos(chartEntries.slice(0, 24));
+                container.innerHTML = '';
+
+                if (!resolved.length) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center text-ytTextMuted py-12 text-sm">
+                            El ranking de Apple Music está disponible, pero no se pudieron resolver
+                            vídeos reproducibles en este momento. Intenta actualizar en unos segundos.
+                        </div>`;
+                } else {
+                    resolved.forEach(song => {
+                        const card = createSongCard(song);
+                        const rankBadge = document.createElement('div');
+                        rankBadge.className = 'absolute top-2 left-2 bg-ytRed text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-lg z-10 border border-white/20';
+                        rankBadge.textContent = `#${song.rank}`;
+                        card.appendChild(rankBadge);
+                        container.appendChild(card);
+                    });
+                }
+
+                const subtitle = document.querySelector('#exploreViewSection h2')?.parentElement?.querySelector('p');
+                if (subtitle) subtitle.textContent = 'Top canciones de Apple Music Colombia · Ranking oficial por popularidad';
+            } catch (error) {
+                console.error('Error cargando Apple Music Charts:', error);
+                container.innerHTML = `
+                    <div class="col-span-full text-center text-ytTextMuted py-12 text-sm">
+                        No fue posible cargar el ranking actual. Comprueba tu conexión e inténtalo de nuevo.
+                    </div>`;
+                container.classList.remove('hidden');
+            } finally {
+                loader.classList.add('hidden');
             }
+        }
 
-            if (topSongs.length === 0) {
-                topSongs = demoSongs;
+        function extractYouTubeId(value) {
+            if (!value) return '';
+            const match = String(value).match(/(?:v=|youtu\.be\/|\/shorts\/|\/embed\/)([a-zA-Z0-9_-]{11})/);
+            return match ? match[1] : '';
+        }
+
+        function normalizeTrackText(value) {
+            return String(value || '')
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/\([^)]*\)|\[[^\]]*\]/g, ' ')
+                .replace(/\b(official|video|audio|lyrics|lyric|visualizer|remaster(ed)?)\b/g, ' ')
+                .replace(/[^a-z0-9]+/g, ' ')
+                .trim();
+        }
+
+        async function searchYouTubeTrack(song) {
+            const query = `${song.title} ${song.artist}`;
+            for (const api of pipedInstances) {
+                try {
+                    const response = await fetch(`${api}/search?q=${encodeURIComponent(query)}&filter=music_songs`, {
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    if (!response.ok) continue;
+
+                    const data = await response.json();
+                    const items = Array.isArray(data.items) ? data.items : [];
+                    const expectedTitle = normalizeTrackText(song.title);
+                    const expectedArtist = normalizeTrackText(song.artist);
+
+                    const candidates = items.map(item => {
+                        const id = extractYouTubeId(item.url);
+                        const title = item.title || '';
+                        const artist = item.uploaderName || item.uploader || '';
+                        const normalizedTitle = normalizeTrackText(title);
+                        const normalizedArtist = normalizeTrackText(artist);
+                        const titleMatch = normalizedTitle.includes(expectedTitle) ||
+                            expectedTitle.includes(normalizedTitle);
+                        const artistMatch = normalizedArtist.includes(expectedArtist) ||
+                            expectedArtist.includes(normalizedArtist);
+                        return { item, id, titleMatch, artistMatch };
+                    }).filter(candidate => candidate.id && candidate.titleMatch);
+
+                    const best = candidates.find(candidate => candidate.artistMatch) || candidates[0];
+                    if (best) {
+                        return {
+                            ...song,
+                            id: best.id,
+                            // Conserva el título y artista del ranking oficial.
+                            thumbnail: song.thumbnail || best.item.thumbnail ||
+                                `https://img.youtube.com/vi/${best.id}/hqdefault.jpg`
+                        };
+                    }
+                } catch (error) {
+                    // Prueba la siguiente instancia disponible.
+                }
             }
+            return null;
+        }
 
-            topSongs = topSongs.slice(0, 18).map((s, idx) => ({ ...s, rank: idx + 1 }));
-
-            loader.classList.add('hidden');
-            container.classList.remove('hidden');
-
-            topSongs.forEach(song => {
-                const card = createSongCard(song);
-                const rankBadge = document.createElement('div');
-                rankBadge.className = 'absolute top-2 left-2 bg-ytRed text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-lg z-10 border border-white/20';
-                rankBadge.textContent = `#${song.rank}`;
-                card.appendChild(rankBadge);
-
-                container.appendChild(card);
+        async function resolveChartVideos(songs) {
+            const resolved = [];
+            // Concurrencia limitada para no saturar las instancias públicas.
+            let index = 0;
+            const workers = Array.from({ length: 3 }, async () => {
+                while (index < songs.length) {
+                    const current = songs[index++];
+                    const result = await searchYouTubeTrack(current);
+                    if (result) resolved.push(result);
+                }
             });
+            await Promise.all(workers);
+            return resolved.sort((a, b) => a.rank - b.rank);
         }
 
         /* ========================================================
@@ -969,7 +1062,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="playSongDirectly(queue[${idx}])" class="p-1.5 rounded-full hover:bg-ytBorder text-ytRed"><i class="fa-solid fa-play"></i></button>
+                        <button onclick="playQueuedTrack(${idx})" class="p-1.5 rounded-full hover:bg-ytBorder text-ytRed"><i class="fa-solid fa-play"></i></button>
                         <button onclick="queue.splice(${idx}, 1); renderQueueView();" class="p-1.5 rounded-full hover:bg-ytBorder text-ytTextMuted hover:text-ytRed"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 `;
@@ -1001,6 +1094,26 @@
 
                 container.appendChild(item);
             });
+        }
+
+        function addToQueue(song) {
+            if (!song || !song.id) {
+                showToast('No se pudo añadir esta canción a la cola.');
+                return;
+            }
+            if (queue.some(item => item.id === song.id)) {
+                showToast('La canción ya está en la cola.');
+                return;
+            }
+            queue.push({ ...song });
+            renderQueueView();
+            showToast(`Añadida a la cola: ${song.title}`);
+        }
+
+        function playQueuedTrack(index) {
+            if (!Number.isInteger(index) || index < 0 || index >= queue.length) return;
+            const [song] = queue.splice(index, 1);
+            playSongDirectly(song);
         }
 
         /* ========================================================
@@ -1188,8 +1301,9 @@
 
             document.getElementById('playPreviewPlBtn').onclick = () => {
                 if (pl.songs.length > 0) {
-                    queue = [...pl.songs];
-                    playSongDirectly(queue[0]);
+                    const [firstSong, ...remainingSongs] = pl.songs;
+                    queue = [...remainingSongs];
+                    playSongDirectly(firstSong);
                     renderQueueView();
                     showToast(`Reproduciendo "${pl.name}"`);
                     closePlaylistPreviewModal();
@@ -1610,45 +1724,57 @@
            CREACIÓN DE DECK & ACTUALIZACIÓN GENERAL
            ======================================================== */
         function playSongDirectly(song) {
-            updateGlobalUI(song);
-            fetchLyrics(song.title, song.artist);
-
-            const isCrossfadeActive = document.getElementById('crossfadeToggle').checked;
-            const currentDeck = activeDeckSide === 'Left' ? deckLeft : deckRight;
-
-            if (isCrossfadeActive && currentDeck.isPlaying()) {
-                const targetDeck = activeDeckSide === 'Left' ? deckRight : deckLeft;
-                targetDeck.loadTrack(song, false);
-                executeManualCrossfade();
-            } else {
-                currentDeck.loadTrack(song, true);
+            if (!song || !song.id) {
+                showToast('Esta canción no tiene un vídeo reproducible disponible.');
+                return;
             }
 
+            // Una elección manual siempre gana: invalida transiciones y cargas anteriores.
+            playbackRequestId++;
+            const requestId = playbackRequestId;
+            cancelCrossfade(true);
+            autoCrossfadeStartedFor = null;
+            lyricsForSongId = null;
+
+            const activeDeck = activeDeckSide === 'Left' ? deckLeft : deckRight;
+            const inactiveDeck = activeDeckSide === 'Left' ? deckRight : deckLeft;
+            const inactivePlayer = inactiveDeck?.getPlayer();
+
+            if (inactivePlayer && typeof inactivePlayer.stopVideo === 'function') {
+                inactivePlayer.stopVideo();
+            }
+
+            activeDeck.setVolume(1);
+            activeDeck.loadTrack(song, true);
+            updateGlobalUI(song);
+
             document.getElementById('bottomPlayerBar').classList.remove('hidden');
-            ensureQueueHasNextSong(song);
+            renderQueueView();
+            ensureQueueHasNextSong(song, requestId);
         }
 
-        async function ensureQueueHasNextSong(currentSong) {
-            if (queue.length === 0) {
-                const related = await fetchRelatedSongs(currentSong.artist || currentSong.title);
-                if (related && related.length > 0) {
-                    const nextTrack = related.find(s => s.id !== currentSong.id) || related[0];
-                    queue.push(nextTrack);
-                    renderQueueView();
-                    showToast(`Siguiente en cola auto-agregada: ${nextTrack.title}`);
-                } else {
-                    const fallback = demoSongs.find(s => s.id !== currentSong.id) || demoSongs[0];
-                    queue.push(fallback);
-                    renderQueueView();
-                }
+        async function ensureQueueHasNextSong(currentSong, requestId = playbackRequestId) {
+            // No insertar recomendaciones tardías si el usuario ya cambió de canción
+            // o añadió manualmente una cola.
+            if (queue.length > 0) return;
+
+            const related = await fetchRelatedSongs(currentSong.artist || currentSong.title);
+            if (requestId !== playbackRequestId ||
+                activeSongData?.id !== currentSong.id ||
+                queue.length > 0) return;
+
+            const nextTrack = related.find(song => song.id !== currentSong.id);
+            if (nextTrack) {
+                queue.push(nextTrack);
+                renderQueueView();
             }
         }
 
         function playNextTrack() {
             if (queue.length > 0) {
                 const nextSong = queue.shift();
-                playSongDirectly(nextSong);
                 renderQueueView();
+                playSongDirectly(nextSong);
             } else {
                 executeManualCrossfade();
             }
@@ -1656,11 +1782,11 @@
 
         function playPrevTrack() {
             const activeDeck = activeDeckSide === 'Left' ? deckLeft : deckRight;
-            const player = activeDeck.getPlayer();
+            const player = activeDeck?.getPlayer();
             if (player && typeof player.getCurrentTime === 'function' && player.getCurrentTime() > 3) {
                 player.seekTo(0, true);
             } else {
-                showToast("No hay canción anterior en la cola.");
+                showToast('No hay canción anterior en la cola.');
             }
         }
 
@@ -1835,7 +1961,9 @@
                             artist: 'YouTube Music',
                             thumbnail: `https://img.youtube.com/vi/${id}/hqdefault.jpg`
                         }));
-                        playSongDirectly(queue[0]);
+                        const [firstSong, ...remainingSongs] = queue;
+                        queue = remainingSongs;
+                        playSongDirectly(firstSong);
                         renderQueueView();
                     }
                 } catch (e) {
@@ -1847,108 +1975,132 @@
         /* ========================================================
            LETRAS EN TIEMPO REAL CONECTADAS A LRCLIB API GRATUITA
            ======================================================== */
-        async function fetchLyrics(title, artist) {
+        async function fetchLyrics(title, artist, duration = 0) {
+            const requestId = ++lyricsRequestId;
             const container = document.getElementById('lyricsContainer');
             container.innerHTML = `
                 <div class="text-ytTextMuted text-xs py-20 flex flex-col items-center gap-3">
                     <i class="fa-solid fa-spinner animate-spin text-2xl text-ytRed"></i>
-                    <span>Buscando letras en tiempo real (LrcLib API)...</span>
-                </div>
-            `;
+                    <span>Buscando letras sincronizadas en LRCLIB...</span>
+                </div>`;
             currentLyrics = [];
             hasSyncedLyrics = false;
+            lastHighlightedLyric = -1;
 
-            const cleanTitle = title.replace(/\(Official Video\)/gi, '')
-                                  .replace(/\[Official Music Video\]/gi, '')
-                                  .replace(/\(Audio\)/gi, '')
-                                  .trim();
+            const cleanTitle = String(title || '')
+                .replace(/\(Official Video\)|\[Official Music Video\]|\(Audio\)|\(Lyrics?\)/gi, '')
+                .trim();
+            const cleanArtist = String(artist || '').trim();
 
             try {
-                const res = await fetch(`https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}&artist_name=${encodeURIComponent(artist)}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.syncedLyrics) {
-                        parseSyncedLyrics(data.syncedLyrics);
-                        return;
-                    } else if (data.plainLyrics) {
-                        renderPlainLyrics(data.plainLyrics);
-                        return;
+                const params = new URLSearchParams({
+                    track_name: cleanTitle,
+                    artist_name: cleanArtist
+                });
+                if (Number.isFinite(duration) && duration > 0) {
+                    params.set('duration', String(Math.round(duration)));
+                }
+
+                let data = null;
+                const exactResponse = await fetch(`https://lrclib.net/api/get?${params.toString()}`);
+                if (exactResponse.ok) data = await exactResponse.json();
+
+                if (!data) {
+                    const searchParams = new URLSearchParams({
+                        track_name: cleanTitle,
+                        artist_name: cleanArtist
+                    });
+                    const searchResponse = await fetch(`https://lrclib.net/api/search?${searchParams.toString()}`);
+                    if (searchResponse.ok) {
+                        const results = await searchResponse.json();
+                        const normalize = value => normalizeTrackText(value);
+                        data = results
+                            .filter(item => item.syncedLyrics || item.plainLyrics)
+                            .sort((a, b) => {
+                                const score = item =>
+                                    (normalize(item.trackName || item.name) === normalize(cleanTitle) ? 2 : 0) +
+                                    (normalize(item.artistName).includes(normalize(cleanArtist)) ? 1 : 0) +
+                                    (item.syncedLyrics ? 2 : 0);
+                                return score(b) - score(a);
+                            })[0] || null;
                     }
                 }
 
-                const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle + ' ' + artist)}`);
-                if (searchRes.ok) {
-                    const searchData = await searchRes.json();
-                    if (searchData.length > 0) {
-                        const match = searchData.find(item => item.syncedLyrics) || searchData[0];
-                        if (match.syncedLyrics) {
-                            parseSyncedLyrics(match.syncedLyrics);
-                            return;
-                        } else if (match.plainLyrics) {
-                            renderPlainLyrics(match.plainLyrics);
-                            return;
-                        }
-                    }
-                }
+                if (requestId !== lyricsRequestId) return;
 
-                container.innerHTML = `<div class="text-ytTextMuted text-sm py-20">No se encontraron letras sincronizadas para esta canción</div>`;
-            } catch (err) {
-                container.innerHTML = `<div class="text-ytTextMuted text-sm py-20">Servicio de letras no disponible temporalmente</div>`;
+                if (data?.syncedLyrics) {
+                    parseSyncedLyrics(data.syncedLyrics);
+                } else if (data?.plainLyrics) {
+                    renderPlainLyrics(data.plainLyrics);
+                } else {
+                    container.textContent = 'No se encontraron letras para esta canción.';
+                }
+            } catch (error) {
+                if (requestId !== lyricsRequestId) return;
+                console.error('Error consultando LRCLIB:', error);
+                container.textContent = 'El servicio de letras no está disponible temporalmente.';
             }
         }
 
         function parseSyncedLyrics(lrcText) {
-            const lines = lrcText.split('\n');
-            currentLyrics = [];
             const container = document.getElementById('lyricsContainer');
+            currentLyrics = [];
             container.innerHTML = '';
 
+            const lines = String(lrcText || '').split(/\r?\n/);
             lines.forEach((line, index) => {
-                const match = line.match(/\[(\d+):(\d+\.\d+)\](.*)/);
-                if (match) {
-                    const min = parseInt(match[1]);
-                    const sec = parseFloat(match[2]);
-                    const time = min * 60 + sec;
-                    const text = match[3].trim();
-
-                    if (text) {
-                        currentLyrics.push({ time, text, index });
-                        const el = document.createElement('p');
-                        el.id = `lyric-line-${index}`;
-                        el.className = 'lyric-line py-2.5 cursor-pointer hover:text-white transition';
-                        el.textContent = text;
-                        el.addEventListener('click', () => {
-                            seekActiveDeck(time);
-                        });
-                        container.appendChild(el);
-                    }
+                const timestampPattern = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
+                const text = line.replace(timestampPattern, '').trim();
+                let match;
+                while ((match = timestampPattern.exec(line)) !== null) {
+                    const fraction = match[3] ? Number(`0.${match[3]}`) : 0;
+                    const time = Number(match[1]) * 60 + Number(match[2]) + fraction;
+                    if (text) currentLyrics.push({ time, text, index });
                 }
             });
 
+            currentLyrics.sort((a, b) => a.time - b.time);
+            currentLyrics.forEach((lyric, position) => {
+                const el = document.createElement('p');
+                el.id = `lyric-line-${position}`;
+                el.className = 'lyric-line py-2.5 cursor-pointer hover:text-white transition';
+                el.textContent = lyric.text;
+                el.addEventListener('click', () => seekActiveDeck(lyric.time));
+                container.appendChild(el);
+                lyric.elementIndex = position;
+            });
+
             hasSyncedLyrics = currentLyrics.length > 0;
+            if (!hasSyncedLyrics) {
+                container.textContent = 'No se encontraron líneas sincronizadas.';
+            }
         }
 
         function renderPlainLyrics(plainText) {
             const container = document.getElementById('lyricsContainer');
-            container.innerHTML = `<div class="text-sm opacity-80 whitespace-pre-line leading-relaxed text-left py-4">${plainText}</div>`;
+            const content = document.createElement('div');
+            content.className = 'text-sm opacity-80 whitespace-pre-line leading-relaxed text-left py-4';
+            content.textContent = plainText || '';
+            container.replaceChildren(content);
         }
 
+        let lastHighlightedLyric = -1;
         function updateLyricsHighlight(currentTime) {
             if (!hasSyncedLyrics || currentLyrics.length === 0) return;
 
-            let activeIndex = -1;
+            let activePosition = -1;
             for (let i = 0; i < currentLyrics.length; i++) {
-                if (currentTime >= currentLyrics[i].time) {
-                    activeIndex = currentLyrics[i].index;
-                } else {
-                    break;
-                }
+                if (currentTime >= currentLyrics[i].time) activePosition = i;
+                else break;
             }
 
-            if (activeIndex !== -1) {
-                document.querySelectorAll('.lyric-line').forEach(el => el.classList.remove('active'));
-                const activeEl = document.getElementById(`lyric-line-${activeIndex}`);
-                if (activeEl && !activeEl.classList.contains('active')) {
+            if (activePosition === lastHighlightedLyric) return;
+            document.querySelectorAll('.lyric-line.active').forEach(el => el.classList.remove('active'));
+            lastHighlightedLyric = activePosition;
+
+            if (activePosition >= 0) {
+                const activeEl = document.getElementById(`lyric-line-${activePosition}`);
+                if (activeEl) {
                     activeEl.classList.add('active');
                     activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
@@ -1961,6 +2113,32 @@
         let deckLeft = null;
         let deckRight = null;
         let isCrossfading = false;
+        let crossfadeTimer = null;
+        let crossfadeGeneration = 0;
+        let playbackRequestId = 0;
+        let lyricsRequestId = 0;
+        let lyricsForSongId = null;
+        let pendingPlaybackSong = null;
+        let autoCrossfadeStartedFor = null;
+
+        function cancelCrossfade(stopInactive = false) {
+            crossfadeGeneration++;
+            if (crossfadeTimer) {
+                clearInterval(crossfadeTimer);
+                crossfadeTimer = null;
+            }
+            isCrossfading = false;
+            document.getElementById('crossfadeTransitionBanner')?.classList.add('hidden');
+
+            if (deckLeft) deckLeft.setVolume(1);
+            if (deckRight) deckRight.setVolume(1);
+
+            if (stopInactive) {
+                const inactiveDeck = activeDeckSide === 'Left' ? deckRight : deckLeft;
+                const player = inactiveDeck?.getPlayer();
+                if (player && typeof player.stopVideo === 'function') player.stopVideo();
+            }
+        }
 
         function setupMixerDecks() {
             deckLeft = createDeckInstance('Left');
@@ -1999,38 +2177,60 @@
             let currentSong = null;
 
             function loadTrack(song, autoPlay = true) {
+                if (!song?.id) return false;
                 currentSong = song;
-                document.getElementById(`trackTitle${side}`).textContent = song.title;
-                document.getElementById(`trackArtist${side}`).textContent = song.artist;
+                document.getElementById(`trackTitle${side}`).textContent = song.title || 'Desconocido';
+                document.getElementById(`trackArtist${side}`).textContent = song.artist || 'Artista desconocido';
+
+                if (!window.YT || !YT.Player) {
+                    pendingPlaybackSong = song;
+                    showToast('El reproductor todavía está cargando. Intenta de nuevo en un momento.');
+                    return false;
+                }
 
                 if (player && typeof player.loadVideoById === 'function') {
-                    player.loadVideoById(song.id);
-                    if (!autoPlay) player.pauseVideo();
+                    if (autoPlay) player.loadVideoById(song.id);
+                    else player.cueVideoById(song.id);
                 } else {
                     player = new YT.Player(ytId, {
                         height: '0',
                         width: '0',
                         videoId: song.id,
-                        playerVars: { 'autoplay': autoPlay ? 1 : 0, 'controls': 0 },
+                        playerVars: { autoplay: autoPlay ? 1 : 0, controls: 0, playsinline: 1 },
                         events: {
-                            'onReady': (e) => {
-                                e.target.setVolume(vol.value * 100);
+                            onReady: (e) => {
+                                e.target.setVolume(Number(vol.value) * 100);
                                 if (autoPlay) e.target.playVideo();
                             },
-                            'onStateChange': (e) => {
+                            onError: (e) => {
+                                console.error(`YouTube Player Error (${side}):`, e.data);
+                                vinyl.classList.remove('animate-spin-slow');
+                                playIcon.className = 'fa-solid fa-play ml-0.5';
+                                if (side === activeDeckSide) {
+                                    document.getElementById('barPlayIcon').className = 'fa-solid fa-play ml-0.5';
+                                    showToast('YouTube no pudo reproducir este vídeo. Prueba otra versión de la canción.');
+                                }
+                            },
+                            onStateChange: (e) => {
                                 if (e.data === YT.PlayerState.PLAYING) {
                                     vinyl.classList.add('animate-spin-slow');
                                     playIcon.className = 'fa-solid fa-pause';
-                                    updateGlobalUI(song);
+                                    if (side === activeDeckSide && currentSong) {
+                                        updateGlobalUI(currentSong);
+                                        if (lyricsForSongId !== currentSong.id) {
+                                            lyricsForSongId = currentSong.id;
+                                            fetchLyrics(
+                                                currentSong.title,
+                                                currentSong.artist,
+                                                e.target.getDuration?.() || 0
+                                            );
+                                        }
+                                    }
                                 } else {
                                     vinyl.classList.remove('animate-spin-slow');
                                     playIcon.className = 'fa-solid fa-play ml-0.5';
-                                    
-                                    if (e.data === YT.PlayerState.ENDED) {
-                                        if (side === activeDeckSide) {
-                                            playNextTrack();
-                                        }
-                                    }
+                                    if (e.data === YT.PlayerState.ENDED &&
+                                        side === activeDeckSide && !isCrossfading) playNextTrack();
                                 }
                             }
                         }
@@ -2039,24 +2239,28 @@
 
                 clearInterval(timer);
                 timer = setInterval(() => {
-                    if (player && typeof player.getCurrentTime === 'function') {
-                        const cur = player.getCurrentTime() || 0;
-                        const dur = player.getDuration() || 0;
-                        curTime.textContent = formatTime(cur);
-                        durTime.textContent = formatTime(dur);
-                        seek.value = dur ? (cur / dur) * 100 : 0;
+                    if (!player || typeof player.getCurrentTime !== 'function') return;
+                    const cur = player.getCurrentTime() || 0;
+                    const dur = player.getDuration() || 0;
+                    curTime.textContent = formatTime(cur);
+                    durTime.textContent = formatTime(dur);
+                    seek.value = dur ? (cur / dur) * 100 : 0;
 
-                        if (side === activeDeckSide) {
-                            updateBottomBarProgress(cur, dur);
-                            updateLyricsHighlight(cur);
+                    if (side !== activeDeckSide ||
+                        player.getPlayerState?.() !== YT.PlayerState.PLAYING) return;
 
-                            const autoCrossfade = document.getElementById('crossfadeToggle').checked;
-                            if (autoCrossfade && dur > 10 && (dur - cur) <= 5 && !isCrossfading) {
-                                executeManualCrossfade();
-                            }
-                        }
+                    updateBottomBarProgress(cur, dur);
+                    updateLyricsHighlight(cur);
+
+                    const autoCrossfade = document.getElementById('crossfadeToggle').checked;
+                    const songKey = currentSong?.id;
+                    if (autoCrossfade && songKey && dur > 10 && (dur - cur) <= 5 &&
+                        !isCrossfading && autoCrossfadeStartedFor !== songKey && queue.length > 0) {
+                        autoCrossfadeStartedFor = songKey;
+                        executeManualCrossfade(true);
                     }
-                }, 500);
+                }, 300);
+                return true;
             }
 
             playBtn.addEventListener('click', () => {
@@ -2095,6 +2299,11 @@
                 loadTrack,
                 getPlayer: () => player,
                 getSong: () => currentSong,
+                stop: () => {
+                    if (player && typeof player.stopVideo === 'function') player.stopVideo();
+                    vinyl.classList.remove('animate-spin-slow');
+                    playIcon.className = 'fa-solid fa-play ml-0.5';
+                },
                 isPlaying: () => player && typeof player.getPlayerState === 'function' && player.getPlayerState() === YT.PlayerState.PLAYING,
                 setVolume: (val) => {
                     vol.value = val;
@@ -2106,118 +2315,122 @@
 
         function toggleMasterPlayback() {
             const activeDeck = activeDeckSide === 'Left' ? deckLeft : deckRight;
-            const p = activeDeck.getPlayer();
-            if (p && typeof p.getPlayerState === 'function') {
-                if (p.getPlayerState() === YT.PlayerState.PLAYING) {
-                    p.pauseVideo();
-                    document.getElementById('barPlayIcon').className = 'fa-solid fa-play ml-0.5';
-                } else {
-                    p.playVideo();
-                    document.getElementById('barPlayIcon').className = 'fa-solid fa-pause';
-                }
+            const p = activeDeck?.getPlayer();
+            if (!p || typeof p.getPlayerState !== 'function') return;
+
+            if (p.getPlayerState() === YT.PlayerState.PLAYING) {
+                p.pauseVideo();
+                document.getElementById('barPlayIcon').className = 'fa-solid fa-play ml-0.5';
+            } else {
+                p.playVideo();
+                document.getElementById('barPlayIcon').className = 'fa-solid fa-pause';
             }
         }
 
         /* ========================================================
            TRANSICIÓN CROSSFADE Y MOSTRADO DE NOMBRES DE CANCIONES
            ======================================================== */
-        async function executeManualCrossfade() {
-            if (isCrossfading) return;
-            isCrossfading = true;
+        async function executeManualCrossfade(isAutomatic = false) {
+            if (isCrossfading || !deckLeft || !deckRight) return;
 
-            const outgoingDeck = activeDeckSide === 'Left' ? deckLeft : deckRight;
-            const incomingDeck = activeDeckSide === 'Left' ? deckRight : deckLeft;
-            activeDeckSide = activeDeckSide === 'Left' ? 'Right' : 'Left';
-
+            const outgoingSide = activeDeckSide;
+            const outgoingDeck = outgoingSide === 'Left' ? deckLeft : deckRight;
+            const incomingDeck = outgoingSide === 'Left' ? deckRight : deckLeft;
             const songOut = outgoingDeck.getSong();
-            let songIn = null;
+            const requestId = playbackRequestId;
+            const generation = ++crossfadeGeneration;
 
-            if (queue.length > 0) {
-                songIn = queue.shift();
-                renderQueueView();
-                incomingDeck.loadTrack(songIn, true);
-            } else if (!incomingDeck.getSong()) {
-                const artistName = songOut ? songOut.artist : 'Top Hits';
-                const recommendations = await fetchRelatedSongs(artistName);
+            isCrossfading = true;
+            let songIn = queue.length ? queue.shift() : null;
 
-                if (recommendations.length > 0) {
-                    songIn = recommendations[0];
-                    incomingDeck.loadTrack(songIn, true);
-                    recommendations.slice(1).forEach(s => queue.push(s));
-                    renderQueueView();
-                } else if (demoSongs.length > 0) {
-                    songIn = demoSongs[Math.floor(Math.random() * demoSongs.length)];
-                    incomingDeck.loadTrack(songIn, true);
+            if (!songIn && songOut) {
+                const recommendations = await fetchRelatedSongs(songOut.artist || songOut.title);
+                if (requestId !== playbackRequestId || generation !== crossfadeGeneration) {
+                    isCrossfading = false;
+                    return;
                 }
-            } else {
-                songIn = incomingDeck.getSong();
-                if (incomingDeck.getPlayer() && typeof incomingDeck.getPlayer().playVideo === 'function') {
-                    incomingDeck.getPlayer().playVideo();
-                }
+                songIn = recommendations.find(song => song.id !== songOut.id) || null;
             }
 
+            if (!songIn || requestId !== playbackRequestId || generation !== crossfadeGeneration) {
+                isCrossfading = false;
+                if (!songIn) showToast('No hay otra canción disponible para la transición.');
+                return;
+            }
+
+            renderQueueView();
             const transitionBanner = document.getElementById('crossfadeTransitionBanner');
-            if (songOut && songIn) {
+            if (songOut) {
                 document.getElementById('transOutTitle').textContent = songOut.title;
-                document.getElementById('transOutThumb').src = songOut.thumbnail;
-                
-                document.getElementById('transInTitle').textContent = songIn.title;
-                document.getElementById('transInThumb').src = songIn.thumbnail;
-
-                transitionBanner.classList.remove('hidden');
+                document.getElementById('transOutThumb').src = songOut.thumbnail || '';
             }
+            document.getElementById('transInTitle').textContent = songIn.title;
+            document.getElementById('transInThumb').src = songIn.thumbnail || '';
+            transitionBanner.classList.remove('hidden');
 
-            let steps = 25;
-            let stepTime = 5000 / steps;
+            incomingDeck.setVolume(0);
+            incomingDeck.loadTrack(songIn, true);
+            activeDeckSide = outgoingSide === 'Left' ? 'Right' : 'Left';
+            updateGlobalUI(songIn);
+            document.getElementById('bottomPlayerBar').classList.remove('hidden');
+
+            const steps = 25;
             let stepCount = 0;
+            crossfadeTimer = setInterval(() => {
+                if (generation !== crossfadeGeneration || requestId !== playbackRequestId) {
+                    clearInterval(crossfadeTimer);
+                    crossfadeTimer = null;
+                    return;
+                }
 
-            let fadeInterval = setInterval(() => {
                 stepCount++;
-                let progress = stepCount / steps;
-
+                const progress = Math.min(stepCount / steps, 1);
                 outgoingDeck.setVolume(1 - progress);
                 incomingDeck.setVolume(progress);
 
                 if (stepCount >= steps) {
-                    clearInterval(fadeInterval);
-                    if (outgoingDeck.getPlayer() && typeof outgoingDeck.getPlayer().pauseVideo === 'function') {
-                        outgoingDeck.getPlayer().pauseVideo();
-                    }
+                    clearInterval(crossfadeTimer);
+                    crossfadeTimer = null;
+                    outgoingDeck.stop();
                     outgoingDeck.setVolume(1);
+                    incomingDeck.setVolume(1);
                     isCrossfading = false;
-                    
                     transitionBanner.classList.add('hidden');
-
-                    const activeSong = incomingDeck.getSong();
-                    if (activeSong) {
-                        updateGlobalUI(activeSong);
-                        fetchLyrics(activeSong.title, activeSong.artist);
-                    }
+                    autoCrossfadeStartedFor = null;
+                    updateGlobalUI(songIn);
                 }
-            }, stepTime);
+            }, 200);
         }
 
         async function fetchRelatedSongs(artistName) {
-            let data = null;
-            for (let api of pipedInstances) {
+            const results = [];
+            const query = `${artistName} popular songs`;
+            for (const api of pipedInstances) {
                 try {
-                    const res = await fetch(`${api}/search?q=${encodeURIComponent(artistName)}&filter=music_songs`);
-                    if (res.ok) {
-                        data = await res.json();
-                        break;
+                    const response = await fetch(`${api}/search?q=${encodeURIComponent(query)}&filter=music_songs`, {
+                        signal: AbortSignal.timeout(8000)
+                    });
+                    if (!response.ok) continue;
+                    const data = await response.json();
+                    if (Array.isArray(data.items)) {
+                        for (const item of data.items) {
+                            const id = extractVideoId(item.url);
+                            if (!id || results.some(song => song.id === id)) continue;
+                            results.push({
+                                id,
+                                title: item.title || 'YouTube Track',
+                                artist: item.uploaderName || artistName,
+                                thumbnail: item.thumbnail || `https://img.youtube.com/vi/${id}/hqdefault.jpg`
+                            });
+                            if (results.length >= 5) break;
+                        }
                     }
-                } catch (e) { continue; }
+                    if (results.length) break;
+                } catch (error) {
+                    // Prueba la siguiente instancia disponible.
+                }
             }
-
-            if (data && data.items && data.items.length > 0) {
-                return data.items.slice(0, 3).map(item => ({
-                    id: item.url ? item.url.split('v=')[1] : '',
-                    title: item.title,
-                    artist: item.uploaderName || artistName,
-                    thumbnail: item.thumbnail
-                })).filter(s => s.id);
-            }
-            return [];
+            return results;
         }
 
         function seekActiveDeck(timeSeconds) {
@@ -2229,9 +2442,11 @@
         }
 
         function extractVideoId(url) {
-            if (url.includes('v=')) return url.split('v=')[1].split('&')[0];
-            if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split('?')[0];
-            return url;
+            if (!url) return '';
+            const value = String(url).trim();
+            if (/^[a-zA-Z0-9_-]{11}$/.test(value)) return value;
+            const match = value.match(/(?:v=|youtu\.be\/|\/watch\/|\/embed\/)([a-zA-Z0-9_-]{11})/);
+            return match ? match[1] : '';
         }
 
         function formatTime(secs) {
