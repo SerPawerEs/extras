@@ -136,10 +136,292 @@
         details summary::-webkit-details-marker {
             display: none;
         }
+
+        /* =============================================
+           MOBILE RESPONSIVE STYLES  (< 768px)
+           ============================================= */
+
+        /* Max-width container for body sections on mobile */
+        @media (max-width: 767px) {
+
+            /* ------ LAYOUT ------ */
+            body {
+                overflow-x: hidden;
+            }
+
+            /* Header: stack search below logo row */
+            header {
+                flex-wrap: wrap;
+                height: auto !important;
+                padding: 0.5rem 0.75rem !important;
+                gap: 0.5rem;
+            }
+            header > div:first-child {
+                min-width: unset !important;
+                flex: 1;
+            }
+            /* Central search: full width on its own row */
+            header > div:nth-child(2) {
+                order: 3;
+                width: 100%;
+                max-width: 100% !important;
+                padding: 0 0 0.25rem 0 !important;
+            }
+            /* Right-side user/actions */
+            header > div:last-child {
+                min-width: unset !important;
+                gap: 0.5rem;
+            }
+            /* Hide "Dual Deck Studio" text, keep icon */
+            #toggleMixerBtn span { display: none; }
+            #toggleMixerBtn { padding: 0.4rem 0.6rem; }
+
+            /* Sidebar: hidden off-screen, slides in as drawer */
+            #sidebar {
+                position: fixed !important;
+                top: 0; left: 0; bottom: 0;
+                width: 80vw !important;
+                max-width: 280px !important;
+                transform: translateX(-100%);
+                transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+                z-index: 60 !important;
+                box-shadow: 8px 0 32px rgba(0,0,0,0.7);
+            }
+            #sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            /* Sidebar backdrop overlay */
+            #sidebarBackdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.65);
+                z-index: 59;
+            }
+            #sidebarBackdrop.visible { display: block; }
+
+            /* Main area: full width when sidebar hidden */
+            #mainContent {
+                padding: 1rem 0.75rem 7rem !important;
+            }
+
+            /* Grid carousels: 2 columns on mobile */
+            #carouselHits,
+            #carouselRecommended,
+            #topArtistsContainer,
+            #carouselExploreTops {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.625rem !important;
+            }
+
+            /* Lyrics panel: full-screen overlay on mobile, stops above bottom bar */
+            #lyricsPanel {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 7.5rem !important; /* queda sobre la barra inferior */
+                width: 100% !important;
+                z-index: 35 !important;   /* debajo de la barra (z-40) pero encima del resto */
+                transform: translateX(100%);
+                transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+            }
+            #lyricsPanel:not(.hidden) {
+                transform: translateX(0);
+            }
+
+            /* ------ BOTTOM PLAYER BAR ------ */
+            #bottomPlayerBar {
+                height: auto !important;
+                flex-direction: column !important;
+                padding: 0.5rem 0.75rem 0.6rem !important;
+                gap: 0.35rem;
+            }
+            /* Song info: smaller thumbnail */
+            #playerSongInfoTrigger {
+                min-width: unset !important;
+                max-width: 100% !important;
+                width: 100%;
+                gap: 0.5rem;
+            }
+            #playerSongInfoTrigger img { width: 2.25rem; height: 2.25rem; }
+
+            /* Center controls: full width */
+            #bottomPlayerBar > div:nth-child(2) {
+                width: 100%;
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+
+            /* Right actions: row at bottom */
+            #bottomPlayerBar > div:last-child {
+                min-width: unset !important;
+                justify-content: flex-end;
+                width: 100%;
+                gap: 0.35rem;
+            }
+
+            /* ------ DUAL DECK MIXER OVERLAY ------ */
+            /* Header of mixer: wrap */
+            #mixerOverlay > div:first-child {
+                flex-wrap: wrap;
+                height: auto !important;
+                padding: 0.6rem 0.75rem !important;
+                gap: 0.4rem;
+            }
+            #mixerOverlay > div:first-child > div:first-child {
+                flex: 1;
+                min-width: 0;
+            }
+            /* Controls row in mixer header */
+            #mixerOverlay > div:first-child > div:last-child {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.4rem;
+                width: 100%;
+                align-items: center;
+            }
+            /* Auto-Crossfade & Transición pills: equal-flex */
+            #mixerOverlay > div:first-child > div:last-child > div {
+                flex: 1;
+                justify-content: center;
+            }
+            /* Master Play button: full row */
+            #masterPlayBtn {
+                flex: 1;
+                justify-content: center;
+            }
+            /* Close button stays icon-only */
+            #closeMixerBtn { flex-shrink: 0; }
+
+            /* Mixer body: vertical stack */
+            #mixerOverlay > div.flex-1 {
+                flex-direction: column !important;
+                padding: 0.75rem !important;
+                gap: 0.75rem !important;
+                overflow-y: auto !important;
+                max-width: 100% !important;
+            }
+
+            /* Decks: full width */
+            #deckPanelLeft,
+            #deckPanelRight {
+                width: 100% !important;
+                flex: none !important;
+                padding: 0.875rem !important;
+            }
+
+            /* Vinyl: slightly smaller on mobile */
+            #vinylLeft, #vinylRight {
+                width: 7.5rem !important;
+                height: 7.5rem !important;
+            }
+
+            /* Central crossfade button: horizontal row between decks */
+            #mixerOverlay > div.flex-1 > div.flex.flex-col.items-center {
+                flex-direction: row !important;
+                justify-content: center;
+                padding: 0.25rem 0 !important;
+                gap: 0.75rem;
+            }
+            /* Cross button itself: smaller on mobile */
+            #transitionBtn {
+                width: 3.25rem !important;
+                height: 3.25rem !important;
+            }
+            #transitionBtn i { font-size: 1rem !important; }
+
+            /* Volume slider: stretch to fill */
+            #volLeft, #volRight { width: 100% !important; }
+            #deckPanelLeft .space-y-3 .flex.items-center.justify-between.text-xs,
+            #deckPanelRight .space-y-3 .flex.items-center.justify-between.text-xs {
+                gap: 0.75rem;
+            }
+
+            /* ------ MODALS ------ */
+            #playlistPreviewModal > div,
+            #playlistSelectModal > div {
+                max-width: calc(100vw - 2rem) !important;
+                padding: 1rem !important;
+            }
+
+            /* PiP player: smaller on mobile */
+            #pipFloatingPlayer {
+                width: calc(100vw - 2rem) !important;
+                right: 1rem !important;
+                bottom: 7.5rem !important;
+            }
+
+            /* Bottom contextual menu: anchored to right edge */
+            #bottomPlayerMenu {
+                right: 0 !important;
+                left: 0 !important;
+                bottom: 3rem !important;
+                width: 100% !important;
+                border-radius: 1rem 1rem 0 0 !important;
+            }
+
+            /* Profile dropdown: full-width below header */
+            #profileDropdown {
+                right: 0 !important;
+                width: calc(100vw - 1.5rem) !important;
+                max-width: 320px;
+            }
+
+            /* Toast: wider on mobile */
+            #toast {
+                left: 50% !important;
+                max-width: calc(100vw - 2rem);
+                text-align: center;
+            }
+
+            /* Search results dropdown: full width */
+            #searchResults {
+                left: 0 !important;
+                right: 0 !important;
+            }
+
+            /* Crossfade banner: vertical stack */
+            #crossfadeTransitionBanner {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                padding: 0.75rem !important;
+                gap: 0.5rem !important;
+            }
+            #crossfadeTransitionBanner > div:last-child {
+                width: 100%;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            /* Playlist library view: tighter header */
+            #libraryViewSection > div:first-child {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+
+        /* Slightly wider breakpoint for tablet (768–1023px) */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            #mainContent { padding: 1.25rem 1.25rem 7rem !important; }
+            #carouselHits,
+            #carouselRecommended,
+            #carouselExploreTops {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+            #topArtistsContainer {
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+        }
     </style>
 </head>
 
 <body class="flex flex-col h-screen overflow-hidden text-slate-100">
+
+    <!-- MOBILE SIDEBAR BACKDROP -->
+    <div id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
 
     <!-- TOP BAR / HEADER -->
     <header class="h-16 border-b border-ytBorder bg-[#030303]/90 backdrop-blur-md flex items-center justify-between px-4 z-40 shrink-0">
@@ -630,7 +912,7 @@
     </div>
 
     <!-- BOTTOM PERSISTENT PLAYER BAR -->
-    <div id="bottomPlayerBar" class="fixed bottom-0 left-0 right-0 h-20 bg-[#0a0a0a] border-t border-ytBorder px-4 flex items-center justify-between z-30 shadow-2xl hidden">
+    <div id="bottomPlayerBar" class="fixed bottom-0 left-0 right-0 h-20 bg-[#0a0a0a] border-t border-ytBorder px-4 flex items-center justify-between z-40 shadow-2xl hidden">
         <!-- Song Details -->
         <div id="playerSongInfoTrigger" class="flex items-center gap-3 min-w-[220px] max-w-xs cursor-pointer group hover:opacity-90 transition">
             <img id="currentThumb" src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=100&h=100&fit=crop" class="w-12 h-12 rounded-lg object-cover cover-thumb border border-ytBorder shadow-md group-hover:scale-105 transition">
@@ -642,12 +924,14 @@
 
         <!-- Center Player Controls -->
         <div class="flex flex-col items-center gap-1 max-w-xl w-full px-4">
-            <div class="flex items-center gap-4">
-                <button id="barPrevBtn" class="text-ytTextMuted hover:text-white text-sm"><i class="fa-solid fa-backward-step"></i></button>
+            <div class="flex items-center gap-3">
+                <button id="barPrevBtn" class="text-ytTextMuted hover:text-white text-sm" title="Anterior"><i class="fa-solid fa-backward-step"></i></button>
+                <button id="barBack10Btn" class="text-ytTextMuted hover:text-white text-xs font-bold px-1.5 py-1 rounded-lg hover:bg-ytCardBg transition" title="-10 segundos">-10s</button>
                 <button id="barPlayBtn" class="w-10 h-10 rounded-full bg-white text-black hover:scale-105 flex items-center justify-center transition shadow-lg">
                     <i id="barPlayIcon" class="fa-solid fa-play ml-0.5 text-sm"></i>
                 </button>
-                <button id="barNextBtn" class="text-ytTextMuted hover:text-white text-sm"><i class="fa-solid fa-forward-step"></i></button>
+                <button id="barFwd10Btn" class="text-ytTextMuted hover:text-white text-xs font-bold px-1.5 py-1 rounded-lg hover:bg-ytCardBg transition" title="+10 segundos">+10s</button>
+                <button id="barNextBtn" class="text-ytTextMuted hover:text-white text-sm" title="Siguiente"><i class="fa-solid fa-forward-step"></i></button>
             </div>
 
             <!-- Seek Bar Slider -->
@@ -906,6 +1190,18 @@
             document.getElementById('barNextBtn').addEventListener('click', playNextTrack);
             document.getElementById('barPrevBtn').addEventListener('click', playPrevTrack);
 
+            // Botones -10s / +10s de la barra inferior
+            document.getElementById('barBack10Btn').addEventListener('click', () => {
+                const activeDeck = activeDeckSide === 'Left' ? deckLeft : deckRight;
+                const p = activeDeck && activeDeck.getPlayer ? activeDeck.getPlayer() : null;
+                if (p && typeof p.seekTo === 'function') p.seekTo(Math.max(0, p.getCurrentTime() - 10), true);
+            });
+            document.getElementById('barFwd10Btn').addEventListener('click', () => {
+                const activeDeck = activeDeckSide === 'Left' ? deckLeft : deckRight;
+                const p = activeDeck && activeDeck.getPlayer ? activeDeck.getPlayer() : null;
+                if (p && typeof p.seekTo === 'function') p.seekTo(p.getCurrentTime() + 10, true);
+            });
+
             // Clic en portada inferior -> Expandir letras e inmersivo
             document.getElementById('playerSongInfoTrigger').addEventListener('click', () => {
                 const lyricsPanel = document.getElementById('lyricsPanel');
@@ -934,11 +1230,36 @@
             const sidebar = document.getElementById('sidebar');
 
             menuBtn.addEventListener('click', () => {
-                sidebar.classList.toggle('sidebar-collapsed');
+                if (window.innerWidth < 768) {
+                    // Mobile: slide-in drawer
+                    openMobileSidebar();
+                } else {
+                    // Desktop: collapse icon-only
+                    sidebar.classList.toggle('sidebar-collapsed');
+                }
             });
         }
 
+        function openMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            sidebar.classList.add('mobile-open');
+            backdrop.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            sidebar.classList.remove('mobile-open');
+            backdrop.classList.remove('visible');
+            document.body.style.overflow = '';
+        }
+
         function navigateTo(page) {
+            // Auto-close sidebar drawer on mobile after navigation
+            if (window.innerWidth < 768) closeMobileSidebar();
+
             const liveSec = document.getElementById('liveViewSection');
             const exploreSec = document.getElementById('exploreViewSection');
             const librarySec = document.getElementById('libraryViewSection');
