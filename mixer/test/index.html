@@ -2541,16 +2541,10 @@
         function setDeckSong(side, song) {
             if (!song || !song.id) return;
             const deck = side === 'Left' ? deckLeft : deckRight;
-            const otherSide = side === 'Left' ? 'Right' : 'Left';
-            const otherDeck = otherSide === 'Left' ? deckLeft : deckRight;
+            if (!deck) return;
 
-            const otherIsPlaying = otherDeck && typeof otherDeck.isPlaying === 'function' && otherDeck.isPlaying();
-
-            // Si el otro deck está sonando, cueamos en silencio a 0:00 sin interrumpir la mezcla
-            // Si ningún deck está sonando y este es el deck activo, autoPlay = true
-            const autoPlay = !otherIsPlaying;
-
-            deck.loadTrack(song, autoPlay);
+            // Siempre cueamos sin reproducir — la interacción (tecla G o botón) inicia la reproducción
+            deck.loadTrack(song, false);
 
             document.getElementById(`trackTitle${side}`).textContent = song.title || 'Desconocido';
             document.getElementById(`trackArtist${side}`).textContent = song.artist || 'Artista desconocido';
@@ -2562,14 +2556,7 @@
             const clearBtn = document.getElementById(`deckSearchClear${side}`);
             if (clearBtn) clearBtn.classList.remove('hidden');
 
-            if (autoPlay) {
-                activeDeckSide = side;
-                updateGlobalUI(song);
-                recordSongPlay(song);
-                document.getElementById('bottomPlayerBar').classList.remove('hidden');
-            }
-
-            showToast(`"${song.title}" cargada en Deck ${side === 'Left' ? 'A' : 'B'}`);
+            showToast(`"${song.title}" cargada en Deck ${side === 'Left' ? 'A' : 'B'} · en espera`);
         }
 
         function updateDeckQueueSelectors() {
@@ -2861,26 +2848,93 @@
             if (isCrossfading || !deckLeft || !deckRight) return;
 
             const outgoingSide = activeDeckSide;
+            const incomingSide = outgoingSide === 'Left' ? 'Right' : 'Left';
             const outgoingDeck = outgoingSide === 'Left' ? deckLeft : deckRight;
+            const incomingDeck = incomingSide === 'Left' ? deckLeft : deckRight;
+
             const songOut = outgoingDeck ? outgoingDeck.getSong() : null;
-            const requestId = playbackRequestId;
-
-            let songIn = queue.length ? queue.shift() : null;
-
-            if (!songIn && songOut) {
-                const recommendations = await fetchRelatedSongs(songOut.artist || songOut.title);
-                if (requestId !== playbackRequestId) return;
-                songIn = recommendations.find(song => song.id !== songOut.id) || null;
-            }
+            const songIn = incomingDeck ? incomingDeck.getSong() : null;
 
             if (!songIn) {
-                showToast('No hay otra canción disponible en la cola para la transición.');
+                showToast(`No hay canción cargada en Deck ${incomingSide === 'Left' ? 'A' : 'B'}.`);
                 return;
             }
 
-            renderQueueView();
-            updateDeckQueueSelectors();
-            executeCrossfadeToSpecificSong(songIn);
+            executeDeckCrossfade(outgoingDeck, incomingDeck, outgoingSide, incomingSide, songOut, songIn);
+        }
+
+        function executeDeckCrossfade(outgoingDeck, incomingDeck, outgoingSide, incomingSide, songOut, songIn) {
+            if (isCrossfading) {
+                cancelCrossfade(false);
+            }
+
+            playbackRequestId++;
+            const requestId = playbackRequestId;
+            const generation = ++crossfadeGeneration;
+            isCrossfading = true;
+
+            recordSongPlay(songIn);
+
+            // Banner de transición
+            const transitionBanner = document.getElementById('crossfadeTransitionBanner');
+            const bannerDur = document.getElementById('bannerDurationText');
+            if (bannerDur) bannerDur.textContent = `Crossfade ${crossfadeDuration}s`;
+            if (songOut) {
+                document.getElementById('transOutTitle').textContent = songOut.title || 'Saliente';
+                document.getElementById('transOutThumb').src = songOut.thumbnail || '';
+            }
+            document.getElementById('transInTitle').textContent = songIn.title || 'Entrante';
+            document.getElementById('transInThumb').src = songIn.thumbnail || '';
+            if (transitionBanner) transitionBanner.classList.remove('hidden');
+
+            // El deck entrante arranca desde su posición actual (sin loadTrack — así conserva su timestamp)
+            const inPlayer = incomingDeck.getPlayer();
+            incomingDeck.setVolume(0);
+            if (inPlayer && typeof inPlayer.playVideo === 'function') {
+                inPlayer.playVideo(); // reanuda desde donde estaba (pausado o en espera)
+            } else {
+                // Fallback: si el player no existe aún, cargamos la canción desde el principio
+                incomingDeck.loadTrack(songIn, true);
+            }
+
+            activeDeckSide = incomingSide;
+            updateGlobalUI(songIn);
+            document.getElementById('bottomPlayerBar').classList.remove('hidden');
+
+            const totalMs = Math.max(1000, crossfadeDuration * 1000);
+            const intervalMs = 50;
+            const totalSteps = Math.max(1, Math.round(totalMs / intervalMs));
+            let stepCount = 0;
+
+            crossfadeTimer = setInterval(() => {
+                if (generation !== crossfadeGeneration || requestId !== playbackRequestId) {
+                    clearInterval(crossfadeTimer);
+                    crossfadeTimer = null;
+                    return;
+                }
+
+                stepCount++;
+                const progress = Math.min(stepCount / totalSteps, 1);
+                outgoingDeck.setVolume(1 - progress);
+                incomingDeck.setVolume(progress);
+
+                if (stepCount >= totalSteps) {
+                    clearInterval(crossfadeTimer);
+                    crossfadeTimer = null;
+
+                    // Pausamos (no stop) el deck saliente para preservar su posición para el próximo cruce
+                    const outPlayer = outgoingDeck.getPlayer();
+                    if (outPlayer && typeof outPlayer.pauseVideo === 'function') {
+                        outPlayer.pauseVideo();
+                    }
+                    outgoingDeck.setVolume(1);
+                    incomingDeck.setVolume(1);
+                    isCrossfading = false;
+                    if (transitionBanner) transitionBanner.classList.add('hidden');
+                    autoCrossfadeStartedFor = null;
+                    updateGlobalUI(songIn);
+                }
+            }, intervalMs);
         }
 
         async function fetchRelatedSongs(artistName) {
