@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Organizador</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-hover: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #64748b;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --border-color: #334155;
+      --cell-active: #0369a1;
+      --cell-active-hover: #075985;
+      --cell-empty: #1e293b;
+      --header-bg: #090d16;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --file-btn-bg: #1e293b;
+      --file-btn-border: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Soporte para viewports móviles (Chrome UI, iOS Safari) */
+    html, body {
+      height: 100vh;
+      height: 100svh;
+      width: 100vw;
+      overflow: hidden;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem;
+      padding-top: max(0.5rem, env(safe-area-inset-top));
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+      padding-left: max(0.5rem, env(safe-area-inset-left));
+      padding-right: max(0.5rem, env(safe-area-inset-right));
+    }
+
+    /* Spinner loader reutilizable */
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3.5px solid rgba(56, 189, 248, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .spinner-sm {
+      width: 16px;
+      height: 16px;
+      border-width: 2px;
+      border-color: rgba(15, 23, 42, 0.3);
+      border-top-color: #0f172a;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Pantalla completa de carga inicial */
+    .initial-loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--bg-primary);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .initial-loader-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .initial-loader-overlay p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0.25rem 0;
+      flex-shrink: 0;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* Barra de Búsqueda */
+    .search-box {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 0.4rem 2.2rem 0.4rem 2rem;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .search-box input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-box .search-icon {
+      position: absolute;
+      left: 0.6rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: var(--text-muted);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    .search-box .btn-clear {
+      position: absolute;
+      right: 0.4rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0.2rem;
+      border-radius: 4px;
+      transition: color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .search-box .btn-clear.visible {
+      display: flex;
+    }
+
+    .search-box .btn-clear:hover {
+      color: var(--text-main);
+      background-color: var(--bg-card-hover);
+    }
+
+    .search-box .btn-clear svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 0.25rem 0;
+      min-height: 0;
+    }
+
+    .grid-matrix {
+      display: grid;
+      grid-template-columns: 28px repeat(5, 1fr);
+      grid-template-rows: 28px repeat(10, 1fr);
+      gap: 3px;
+      width: 100%;
+      height: 100%;
+    }
+
+    .header-cell {
+      background-color: var(--header-bg);
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 4px;
+      user-select: none;
+    }
+
+    .cell {
+      border-radius: 4px;
+      padding: 2px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      border: 1px solid transparent;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .cell.empty {
+      background-color: var(--cell-empty);
+      color: var(--text-muted);
+      border-color: var(--border-color);
+    }
+
+    .cell.empty:hover {
+      background-color: var(--bg-card-hover);
+    }
+
+    .cell.has-data {
+      background-color: var(--cell-active);
+      color: var(--text-main);
+    }
+
+    .cell.has-data:hover {
+      background-color: var(--cell-active-hover);
+    }
+
+    /* Filtro de búsqueda */
+    .cell.filtered-out {
+      opacity: 0.2;
+      filter: grayscale(80%);
+    }
+
+    .cell.filtered-match {
+      box-shadow: 0 0 0 2px var(--accent);
+      transform: scale(1.02);
+      z-index: 10;
+    }
+
+    .cell-title {
+      font-size: clamp(0.5rem, 1.6vw, 0.75rem);
+      font-weight: 600;
+      width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 2px;
+    }
+
+    .cell.empty .cell-title {
+      opacity: 0.4;
+      font-weight: 400;
+    }
+
+    /* Modal Emergente */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      padding-top: max(1rem, env(safe-area-inset-top));
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
+      max-height: calc(100svh - 2rem);
+      overflow-y: auto;
+      padding: 1.25rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .modal-header h3 {
+      color: var(--accent);
+      font-size: 1rem;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .btn-square {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--file-btn-bg);
+      border: 1px dashed var(--file-btn-border);
+      border-radius: 6px;
+      color: var(--accent);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      padding: 0;
+    }
+
+    .btn-square input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .btn-square svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    .btn-square:hover {
+      background-color: var(--bg-card-hover);
+      border-style: solid;
+    }
+
+    .btn-square-danger {
+      background-color: transparent;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .btn-square-danger:hover {
+      background-color: var(--danger);
+      color: #ffffff;
+      border-style: solid;
+    }
+
+    .form-group {
+      margin-bottom: 0.75rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-main);
+    }
+
+    .form-group input[type="text"],
+    .form-group textarea {
+      width: 100%;
+      padding: 0.5rem;
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .form-group input[type="text"]:focus,
+    .form-group textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .form-group textarea {
+      resize: none;
+      height: 60px;
+    }
+
+    /* Contenedor e indicador de carga de imagen */
+    .image-preview-container {
+      margin-top: 0.5rem;
+      display: none;
+      flex-direction: column;
+    }
+
+    .image-preview-container.has-image {
+      display: flex;
+    }
+
+    .image-thumb-wrapper {
+      position: relative;
+      width: 100%;
+      height: 130px;
+      background: var(--bg-primary);
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .image-thumb-wrapper:hover {
+      border-color: var(--accent);
+      transform: scale(0.99);
+    }
+
+    .image-thumb-wrapper img {
+      max-height: 100%;
+      max-width: 100%;
+      object-fit: contain;
+      display: none;
+    }
+
+    .image-thumb-wrapper img.loaded {
+      display: block;
+    }
+
+    .image-loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.85rem;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 0.55rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease, opacity 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    .btn svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: #0f172a;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background-color: var(--bg-card-hover);
+    }
+
+    .btn-secondary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-danger {
+      background-color: var(--danger);
+      color: #ffffff;
+    }
+
+    .btn-danger:hover {
+      background-color: var(--danger-hover);
+    }
+
+    /* Visor de Imagen Pantalla Completa con Botones Arriba */
+    .image-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.92);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      padding: 1rem;
+      padding-top: max(1rem, env(safe-area-inset-top));
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+
+    .image-modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .image-modal-content {
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .image-modal-toolbar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 0.25rem;
+    }
+
+    .image-modal-content img {
+      max-width: 100%;
+      max-height: 75vh;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Pantalla Completa de Carga Inicial -->
+  <div class="initial-loader-overlay" id="initial-loader">
+    <div class="spinner"></div>
+    <p>Cargando datos del Organizador...</p>
+  </div>
+
+  <header>
+    <div class="header-top">
+      <h1>Organizador</h1>
+    </div>
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" id="search-input" placeholder="Buscar por título o detalles...">
+      <button type="button" id="btn-clear-search" class="btn-clear" title="Limpiar búsqueda" aria-label="Limpiar búsqueda">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="grid-matrix" id="grid"></div>
+  </main>
+
+  <!-- Modal Emergente de Visualización y Edición -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-cell-label">Casilla A1</h3>
+
+        <!-- Botones 1x1 en la esquina superior derecha -->
+        <div class="header-actions">
+          <!-- Botón 1: Tomar foto (Cámara) -->
+          <div class="btn-square" title="Tomar foto con la cámara">
+            <input type="file" id="input-camera" accept="image/*" capture="environment">
+            <svg viewBox="0 0 24 24">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+          </div>
+
+          <!-- Botón 2: Seleccionar imagen (Galería) -->
+          <div class="btn-square" title="Seleccionar imagen de la galería">
+            <input type="file" id="input-gallery" accept="image/*">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          </div>
+
+          <!-- Botón 3: Eliminar todo el contenido de la casilla -->
+          <button type="button" class="btn-square btn-square-danger" id="btn-delete-cell-data" title="Eliminar todo el contenido de esta casilla">
+            <svg viewBox="0 0 24 24">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <form id="edit-form">
+        <div class="form-group">
+          <label for="input-title">Título</label>
+          <input type="text" id="input-title" placeholder="Ej. Tarea importante..." required>
+        </div>
+        <div class="form-group">
+          <label for="input-details">Detalles</label>
+          <textarea id="input-details" placeholder="Escribe los detalles aquí..."></textarea>
+        </div>
+
+        <div class="image-preview-container" id="image-preview-box">
+          <div class="image-thumb-wrapper" id="thumb-wrapper" title="Haz clic para ver en pantalla completa">
+            <div class="image-loader" id="image-loader">
+              <div class="spinner"></div>
+              <span>Cargando imagen...</span>
+            </div>
+            <img id="preview-img" src="" alt="Vista previa">
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-close-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-form">
+            <span id="btn-save-text">Guardar</span>
+            <div class="spinner spinner-sm" id="btn-save-spinner" style="display: none;"></div>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Visor de Imagen Pantalla Completa -->
+  <div class="image-modal-overlay" id="image-modal-overlay">
+    <div class="image-modal-content">
+      <div class="image-modal-toolbar">
+        <button type="button" class="btn btn-danger" id="btn-delete-image-expanded" style="max-width: 160px; padding: 0.4rem 0.6rem;">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          Eliminar imagen
+        </button>
+        <button type="button" class="btn btn-secondary" id="btn-close-image-modal" style="max-width: 100px; padding: 0.4rem 0.6rem;">Cerrar</button>
+      </div>
+
+      <img id="full-screen-img" src="" alt="Imagen completa">
+    </div>
+  </div>
+
+  <!-- Firebase Scripts (v9 Modular vía CDN ES Modules) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, get, child, set, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDOHimOH-Tew8I62OrIfh-aHlE1juOZ2NA",
+      authDomain: "database-3c232.firebaseapp.com",
+      databaseURL: "https://database-3c232-default-rtdb.firebaseio.com",
+      projectId: "database-3c232",
+      storageBucket: "database-3c232.firebasestorage.app",
+      messagingSenderId: "591401839388",
+      appId: "1:591401839388:web:14afcbc9f38fa52e1468d9",
+      measurementId: "G-T8KEKD4QJH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const ROWS = 10;
+    const COLS = 5;
+    const rowLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+    let matrixData = {};
+    let activeCellId = null;
+    let currentBase64Image = "";
+    let isInitialLoad = true;
+    let isSaving = false;
+
+    const initialLoader = document.getElementById("initial-loader");
+    const gridEl = document.getElementById("grid");
+    const searchInput = document.getElementById("search-input");
+    const btnClearSearch = document.getElementById("btn-clear-search");
+    const modalOverlay = document.getElementById("modal-overlay");
+    const modalCellLabel = document.getElementById("modal-cell-label");
+    const editForm = document.getElementById("edit-form");
+    const inputTitle = document.getElementById("input-title");
+    const inputDetails = document.getElementById("input-details");
+    const inputCamera = document.getElementById("input-camera");
+    const inputGallery = document.getElementById("input-gallery");
+    const btnDeleteCellData = document.getElementById("btn-delete-cell-data");
+    const btnCloseModal = document.getElementById("btn-close-modal");
+    const btnSaveForm = document.getElementById("btn-save-form");
+    const btnSaveText = document.getElementById("btn-save-text");
+    const btnSaveSpinner = document.getElementById("btn-save-spinner");
+    
+    const imagePreviewBox = document.getElementById("image-preview-box");
+    const thumbWrapper = document.getElementById("thumb-wrapper");
+    const imageLoader = document.getElementById("image-loader");
+    const previewImg = document.getElementById("preview-img");
+
+    const imageModalOverlay = document.getElementById("image-modal-overlay");
+    const fullScreenImg = document.getElementById("full-screen-img");
+    const btnCloseImageModal = document.getElementById("btn-close-image-modal");
+    const btnDeleteImageExpanded = document.getElementById("btn-delete-image-expanded");
+
+    function adjustViewportHeight() {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    window.addEventListener('resize', adjustViewportHeight);
+    window.addEventListener('orientationchange', adjustViewportHeight);
+    adjustViewportHeight();
+
+    function initGrid() {
+      gridEl.innerHTML = "";
+      const corner = document.createElement("div");
+      corner.className = "header-cell";
+      gridEl.appendChild(corner);
+
+      for (let c = 1; c <= COLS; c++) {
+        const colHeader = document.createElement("div");
+        colHeader.className = "header-cell";
+        colHeader.textContent = c;
+        gridEl.appendChild(colHeader);
+      }
+
+      for (let r = 0; r < ROWS; r++) {
+        const rowLetter = rowLetters[r];
+        const rowHeader = document.createElement("div");
+        rowHeader.className = "header-cell";
+        rowHeader.textContent = rowLetter;
+        gridEl.appendChild(rowHeader);
+
+        for (let c = 1; c <= COLS; c++) {
+          const cellKey = `R${r+1}_C${c}`;
+          const cell = document.createElement("div");
+          cell.className = "cell empty";
+          cell.id = `cell-${cellKey}`;
+
+          cell.innerHTML = `<span class="cell-title" id="title-${cellKey}">Vacío</span>`;
+          cell.addEventListener("click", () => openModal(cellKey, `${rowLetter}${c}`));
+          gridEl.appendChild(cell);
+        }
+      }
+    }
+
+    // Escuchar metadatos livianos de la matriz (Optimizando ancho de banda sin transmitir Base64 en la carga inicial)
+    const matrixRef = ref(db, "matrix");
+    onValue(matrixRef, (snapshot) => {
+      matrixData = snapshot.val() || {};
+      updateGridUI();
+      applySearchFilter();
+
+      // Desactivar pantalla de carga inicial tras recibir los primeros datos
+      if (isInitialLoad) {
+        isInitialLoad = false;
+        initialLoader.classList.add("hidden");
+      }
+    });
+
+    function updateGridUI() {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          const cellKey = `R${r+1}_C${c}`;
+          const cellEl = document.getElementById(`cell-${cellKey}`);
+          const titleEl = document.getElementById(`title-${cellKey}`);
+          const data = matrixData[cellKey];
+
+          if (cellEl && titleEl) {
+            if (data && data.title && data.title.trim() !== "") {
+              cellEl.className = "cell has-data";
+              titleEl.textContent = data.title;
+            } else {
+              cellEl.className = "cell empty";
+              titleEl.textContent = "Vacío";
+            }
+          }
+        }
+      }
+    }
+
+    function applySearchFilter() {
+      const query = searchInput.value.toLowerCase().trim();
+
+      if (query !== "") {
+        btnClearSearch.classList.add("visible");
+      } else {
+        btnClearSearch.classList.remove("visible");
+      }
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          const cellKey = `R${r+1}_C${c}`;
+          const cellEl = document.getElementById(`cell-${cellKey}`);
+          if (!cellEl) continue;
+
+          cellEl.classList.remove("filtered-out", "filtered-match");
+
+          if (query !== "") {
+            const data = matrixData[cellKey] || {};
+            const title = (data.title || "").toLowerCase();
+            const details = (data.details || "").toLowerCase();
+
+            if (title.includes(query) || details.includes(query)) {
+              cellEl.classList.add("filtered-match");
+            } else {
+              cellEl.classList.add("filtered-out");
+            }
+          }
+        }
+      }
+    }
+
+    searchInput.addEventListener("input", applySearchFilter);
+
+    btnClearSearch.addEventListener("click", () => {
+      searchInput.value = "";
+      applySearchFilter();
+      searchInput.focus();
+    });
+
+    // Abrir modal e ir a buscar la imagen individual bajo demanda si la casilla la contiene
+    async function openModal(cellKey, excelCoord) {
+      if (isSaving) return;
+      activeCellId = cellKey;
+      const data = matrixData[cellKey] || {};
+
+      modalCellLabel.textContent = `Casilla ${excelCoord}`;
+      inputTitle.value = data.title || "";
+      inputDetails.value = data.details || "";
+      inputCamera.value = "";
+      inputGallery.value = "";
+      currentBase64Image = "";
+
+      modalOverlay.classList.add("active");
+
+      // Si la casilla registra tener imagen o datos guardados, consultar la imagen a Firebase bajo demanda
+      if (data.hasImage || data.image) {
+        showImageLoader();
+        try {
+          // Si la imagen ya está en memoria local (ej. tras guardar), usarla; de lo contrario leer sólo esta rama
+          if (data.image) {
+            currentBase64Image = data.image;
+          } else {
+            const imgSnapshot = await get(child(ref(db), `matrix/${cellKey}/image`));
+            currentBase64Image = imgSnapshot.val() || "";
+          }
+        } catch (err) {
+          console.error("Error al cargar la imagen individual:", err);
+          currentBase64Image = "";
+        }
+        updateImagePreviewState();
+      } else {
+        hideImageContainer();
+      }
+    }
+
+    function showImageLoader() {
+      imagePreviewBox.classList.add("has-image");
+      imageLoader.style.display = "flex";
+      previewImg.classList.remove("loaded");
+      previewImg.src = "";
+    }
+
+    function hideImageContainer() {
+      imagePreviewBox.classList.remove("has-image");
+      imageLoader.style.display = "none";
+      previewImg.classList.remove("loaded");
+      previewImg.src = "";
+    }
+
+    function updateImagePreviewState() {
+      if (currentBase64Image) {
+        imagePreviewBox.classList.add("has-image");
+        imageLoader.style.display = "none";
+        previewImg.src = currentBase64Image;
+        previewImg.classList.add("loaded");
+      } else {
+        hideImageContainer();
+      }
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) {
+        showImageLoader();
+        const reader = new FileReader();
+        reader.onload = function(uploadEvent) {
+          currentBase64Image = uploadEvent.target.result;
+          updateImagePreviewState();
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    inputCamera.addEventListener("change", handleFileSelect);
+    inputGallery.addEventListener("change", handleFileSelect);
+
+    thumbWrapper.addEventListener("click", () => {
+      if (currentBase64Image) {
+        fullScreenImg.src = currentBase64Image;
+        imageModalOverlay.classList.add("active");
+      }
+    });
+
+    btnDeleteImageExpanded.addEventListener("click", () => {
+      currentBase64Image = "";
+      inputCamera.value = "";
+      inputGallery.value = "";
+      updateImagePreviewState();
+      imageModalOverlay.classList.remove("active");
+    });
+
+    btnDeleteCellData.addEventListener("click", async () => {
+      if (!activeCellId || isSaving) return;
+      if (confirm("¿Seguro que deseas borrar toda la información de esta casilla?")) {
+        setSavingState(true);
+        try {
+          await remove(ref(db, `matrix/${activeCellId}`));
+          closeModal();
+        } catch (err) {
+          alert("Error al borrar: " + err.message);
+        } finally {
+          setSavingState(false);
+        }
+      }
+    });
+
+    btnCloseImageModal.addEventListener("click", () => {
+      imageModalOverlay.classList.remove("active");
+    });
+
+    function closeModal() {
+      if (isSaving) return;
+      modalOverlay.classList.remove("active");
+      activeCellId = null;
+      currentBase64Image = "";
+    }
+
+    btnCloseModal.addEventListener("click", closeModal);
+    modalOverlay.addEventListener("click", (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+
+    function setSavingState(saving) {
+      isSaving = saving;
+      btnSaveForm.disabled = saving;
+      btnCloseModal.disabled = saving;
+
+      if (saving) {
+        btnSaveText.textContent = "Guardando...";
+        btnSaveSpinner.style.display = "inline-block";
+      } else {
+        btnSaveText.textContent = "Guardar";
+        btnSaveSpinner.style.display = "none";
+      }
+    }
+
+    editForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!activeCellId || isSaving) return;
+
+      const title = inputTitle.value.trim();
+      const details = inputDetails.value.trim();
+
+      const payload = {
+        title: title,
+        details: details,
+        hasImage: !!currentBase64Image,
+        updatedAt: Date.now()
+      };
+
+      if (currentBase64Image) {
+        payload.image = currentBase64Image;
+      } else {
+        payload.image = null;
+      }
+
+      setSavingState(true);
+
+      try {
+        await set(ref(db, `matrix/${activeCellId}`), payload);
+        closeModal();
+      } catch (err) {
+        alert("Error al guardar: " + err.message);
+      } finally {
+        setSavingState(false);
+      }
+    });
+
+    initGrid();
+  </script>
+</body>
+</html>
